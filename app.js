@@ -2,6 +2,7 @@ const BOARD_SIZE = 15;
 const EMPTY = 0;
 const BLACK = 1;
 const WHITE = 2;
+const STORAGE_KEY = "linkplay-gomoku-session-v1";
 
 const canvas = document.querySelector("#boardCanvas");
 const ctx = canvas.getContext("2d");
@@ -50,7 +51,13 @@ const state = {
   recordLabel: "新房间",
   gameCounted: false,
   suppressCloseNotice: false,
+  restoring: false,
 };
+
+function makeRoomId() {
+  if (window.crypto && crypto.randomUUID) return `lp-${crypto.randomUUID().slice(0, 8)}`;
+  return `lp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function randomName() {
   return `玩家${Math.floor(1000 + Math.random() * 9000)}`;
@@ -64,10 +71,68 @@ function colorName(color) {
   return color === BLACK ? "黑棋" : "白棋";
 }
 
+function sessionSnapshot() {
+  return {
+    board: state.board,
+    moves: state.moves,
+    turn: state.turn,
+    winner: state.winner,
+    mode: state.mode,
+    role: state.role,
+    roomId: state.roomId,
+    players: state.players,
+    message: state.message,
+    record: state.record,
+    recordLabel: state.recordLabel,
+    gameCounted: state.gameCounted,
+  };
+}
+
+function saveSession() {
+  if (state.restoring) return;
+  if (state.mode === "idle") {
+    localStorage.removeItem(STORAGE_KEY);
+    return;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionSnapshot()));
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
+
+function clearSession() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+function applySession(saved) {
+  if (!saved) return false;
+  state.board = saved.board || state.board;
+  state.moves = saved.moves || [];
+  state.turn = saved.turn || BLACK;
+  state.winner = saved.winner || EMPTY;
+  state.mode = saved.mode || "idle";
+  state.role = saved.role || "spectator";
+  state.roomId = saved.roomId || "";
+  state.players = saved.players || state.players;
+  state.message = saved.message || state.message;
+  state.record = saved.record || state.record;
+  state.recordLabel = saved.recordLabel || state.recordLabel;
+  state.gameCounted = Boolean(saved.gameCounted);
+  return true;
+}
+
 function resetRoomRecord(label = "新房间") {
   state.record = { total: 0, black: 0, white: 0 };
   state.recordLabel = label;
   state.gameCounted = false;
+  saveSession();
 }
 
 function resetBoard(announce = true, message = "黑棋先手") {
@@ -81,6 +146,7 @@ function resetBoard(announce = true, message = "黑棋先手") {
   hideResultModal();
   if (announce) send({ type: "reset", record: state.record });
   render();
+  saveSession();
 }
 
 function setStatus(text, connected = false) {
@@ -122,34 +188,16 @@ function canPlay() {
   return (state.role === "black" && state.turn === BLACK) || (state.role === "white" && state.turn === WHITE);
 }
 
-function placeStone(row, col, color, broadcast = true) {
-  if (state.board[row][col] !== EMPTY || state.winner) return false;
-  state.board[row][col] = color;
-  state.moves.push({ row, col, color });
-
-  if (checkWinner(row, col, color)) {
-    finishGame(color);
-  } else {
-    state.turn = color === BLACK ? WHITE : BLACK;
-    state.message = `轮到${colorName(state.turn)}`;
+function countDirection(row, col, dr, dc, color) {
+  let count = 0;
+  let r = row + dr;
+  let c = col + dc;
+  while (r >= 0 && c >= 0 && r < BOARD_SIZE && c < BOARD_SIZE && state.board[r][c] === color) {
+    count += 1;
+    r += dr;
+    c += dc;
   }
-
-  if (broadcast) send({ type: "move", row, col, color, record: state.record });
-  render();
-  return true;
-}
-
-function finishGame(winner) {
-  state.winner = winner;
-  state.turn = winner === BLACK ? WHITE : BLACK;
-  state.message = `${colorName(winner)}获胜`;
-  if (!state.gameCounted) {
-    state.record.total += 1;
-    if (winner === BLACK) state.record.black += 1;
-    if (winner === WHITE) state.record.white += 1;
-    state.gameCounted = true;
-  }
-  showResultModal();
+  return count;
 }
 
 function checkWinner(row, col, color) {
@@ -167,16 +215,35 @@ function checkWinner(row, col, color) {
   });
 }
 
-function countDirection(row, col, dr, dc, color) {
-  let count = 0;
-  let r = row + dr;
-  let c = col + dc;
-  while (r >= 0 && c >= 0 && r < BOARD_SIZE && c < BOARD_SIZE && state.board[r][c] === color) {
-    count += 1;
-    r += dr;
-    c += dc;
+function finishGame(winner) {
+  state.winner = winner;
+  state.turn = winner === BLACK ? WHITE : BLACK;
+  state.message = `${colorName(winner)}获胜`;
+  if (!state.gameCounted) {
+    state.record.total += 1;
+    if (winner === BLACK) state.record.black += 1;
+    if (winner === WHITE) state.record.white += 1;
+    state.gameCounted = true;
   }
-  return count;
+  showResultModal();
+}
+
+function placeStone(row, col, color, broadcast = true) {
+  if (state.board[row][col] !== EMPTY || state.winner) return false;
+  state.board[row][col] = color;
+  state.moves.push({ row, col, color });
+
+  if (checkWinner(row, col, color)) {
+    finishGame(color);
+  } else {
+    state.turn = color === BLACK ? WHITE : BLACK;
+    state.message = `轮到${colorName(state.turn)}`;
+  }
+
+  if (broadcast) send({ type: "move", row, col, color, record: state.record });
+  render();
+  saveSession();
+  return true;
 }
 
 function updatePlayers() {
@@ -205,48 +272,6 @@ function updateMoveList() {
       li.textContent = `${step}. ${colorName(move.color)} ${String.fromCharCode(65 + move.col)}${move.row + 1}`;
       moveList.appendChild(li);
     });
-}
-
-function drawBoard() {
-  const { pad, gap } = cellGeometry();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const boardGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  boardGradient.addColorStop(0, "#efc789");
-  boardGradient.addColorStop(1, "#c9924f");
-  ctx.fillStyle = boardGradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.strokeStyle = "rgba(65, 42, 19, 0.72)";
-  ctx.lineWidth = 2;
-  for (let i = 0; i < BOARD_SIZE; i += 1) {
-    const p = pad + i * gap;
-    ctx.beginPath();
-    ctx.moveTo(pad, p);
-    ctx.lineTo(canvas.width - pad, p);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(p, pad);
-    ctx.lineTo(p, canvas.height - pad);
-    ctx.stroke();
-  }
-
-  [3, 7, 11].forEach((row) => {
-    [3, 7, 11].forEach((col) => {
-      ctx.beginPath();
-      ctx.fillStyle = "rgba(65, 42, 19, 0.75)";
-      ctx.arc(pad + col * gap, pad + row * gap, 5, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  });
-
-  state.moves.forEach((move, index) => {
-    drawStone(move.row, move.col, move.color, index === state.moves.length - 1);
-  });
-
-  if (state.hover && canPlay() && state.board[state.hover.row][state.hover.col] === EMPTY) {
-    drawGhost(state.hover.row, state.hover.col, state.turn);
-  }
 }
 
 function drawStone(row, col, color, latest) {
@@ -287,11 +312,52 @@ function drawGhost(row, col, color) {
   ctx.fill();
 }
 
+function drawBoard() {
+  const { pad, gap } = cellGeometry();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const boardGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  boardGradient.addColorStop(0, "#efc789");
+  boardGradient.addColorStop(1, "#c9924f");
+  ctx.fillStyle = boardGradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "rgba(65, 42, 19, 0.72)";
+  ctx.lineWidth = 2;
+  for (let i = 0; i < BOARD_SIZE; i += 1) {
+    const p = pad + i * gap;
+    ctx.beginPath();
+    ctx.moveTo(pad, p);
+    ctx.lineTo(canvas.width - pad, p);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p, pad);
+    ctx.lineTo(p, canvas.height - pad);
+    ctx.stroke();
+  }
+
+  [3, 7, 11].forEach((row) => {
+    [3, 7, 11].forEach((col) => {
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(65, 42, 19, 0.75)";
+      ctx.arc(pad + col * gap, pad + row * gap, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+
+  state.moves.forEach((move, index) => drawStone(move.row, move.col, move.color, index === state.moves.length - 1));
+
+  if (state.hover && canPlay() && state.board[state.hover.row][state.hover.col] === EMPTY) {
+    drawGhost(state.hover.row, state.hover.col, state.turn);
+  }
+}
+
 function showResultModal() {
   resultTitle.textContent = "本局结束";
   resultSummary.textContent = `${colorName(state.winner)}获胜，要再开一把吗？`;
   updateRecord();
   resultModal.hidden = false;
+  saveSession();
 }
 
 function hideResultModal() {
@@ -313,24 +379,27 @@ function send(payload) {
   }
 }
 
+function handleRemoteLeave() {
+  resetRoomRecord("玩家离开后已重置");
+  resetBoard(false, "对方已退出，当前房间战绩已清零");
+  state.players = { black: "等待", white: "等待" };
+  state.mode = "idle";
+  setStatus("玩家退出");
+  render();
+  saveSession();
+}
+
 function receive(payload) {
   if (!payload || typeof payload !== "object") return;
   if (payload.players) state.players = payload.players;
   if (payload.record) state.record = payload.record;
   if (payload.recordLabel) state.recordLabel = payload.recordLabel;
 
-  if (payload.type === "move") {
-    placeStone(payload.row, payload.col, payload.color, false);
-  }
-  if (payload.type === "reset") {
-    resetBoard(false);
-  }
-  if (payload.type === "undo") {
-    undoMove(false);
-  }
-  if (payload.type === "leave") {
-    handleRemoteLeave();
-  }
+  if (payload.type === "move") placeStone(payload.row, payload.col, payload.color, false);
+  if (payload.type === "reset") resetBoard(false);
+  if (payload.type === "undo") undoMove(false);
+  if (payload.type === "leave") handleRemoteLeave();
+
   if (payload.type === "hello" && state.role === "black") {
     state.players.white = payload.name || "白棋玩家";
     state.message = "好友已加入，黑棋先手";
@@ -345,6 +414,7 @@ function receive(payload) {
       recordLabel: state.recordLabel,
     });
   }
+
   if (payload.type === "welcome") {
     state.players = payload.players || state.players;
     state.board = payload.board || state.board;
@@ -356,7 +426,9 @@ function receive(payload) {
     state.message = "已加入房间，等待黑棋落子";
     if (state.winner) showResultModal();
   }
+
   render();
+  saveSession();
 }
 
 function connectEvents(conn) {
@@ -364,10 +436,9 @@ function connectEvents(conn) {
   conn.on("open", () => {
     state.mode = "online";
     setStatus("已连接", true);
-    if (state.role === "white") {
-      conn.send({ type: "hello", name: ownName() });
-    }
+    if (state.role === "white") conn.send({ type: "hello", name: ownName() });
     render();
+    saveSession();
   });
   conn.on("data", receive);
   conn.on("close", () => {
@@ -377,58 +448,93 @@ function connectEvents(conn) {
     setStatus("连接断开");
     state.mode = "idle";
     render();
+    saveSession();
   });
-  conn.on("error", () => {
-    setStatus("连接错误");
-  });
+  conn.on("error", () => setStatus("连接错误"));
 }
 
-function ensurePeer(onReady) {
+function ensurePeer(onReady, requestedId = null) {
   if (!window.Peer) {
     setStatus("PeerJS 加载失败");
     state.message = "联机库加载失败，可先使用本地对战";
     render();
     return;
   }
+
+  if (requestedId && state.peer && !state.peer.destroyed && state.peer.id !== requestedId) {
+    state.peer.destroy();
+    state.peer = null;
+  }
+
   if (state.peer && !state.peer.destroyed) {
     onReady(state.peer);
     return;
   }
-  const peer = new Peer();
+
+  const peer = requestedId ? new Peer(requestedId) : new Peer();
   state.peer = peer;
   setStatus("连接中");
   peer.on("open", () => onReady(peer));
-  peer.on("error", () => {
+  peer.on("error", (error) => {
     setStatus("信令不可用");
-    state.message = "公共信令服务暂不可用，可使用本地对战";
+    state.message =
+      error && error.type === "unavailable-id"
+        ? "这个房间码正在被占用，请稍后刷新或重新开房"
+        : "公共信令服务暂不可用，可使用本地对战";
     render();
+  });
+}
+
+function updateShareLink(roomId) {
+  roomInput.value = roomId;
+  const url = new URL("gomoku.html", window.location.href);
+  url.searchParams.set("room", roomId);
+  shareInput.value = url.toString();
+}
+
+function bindHostConnections(peer) {
+  peer.on("connection", (conn) => {
+    if (state.conn && state.conn.open) {
+      conn.close();
+      return;
+    }
+    connectEvents(conn);
   });
 }
 
 function hostRoom() {
   const name = ownName();
+  const roomId = makeRoomId();
   nicknameInput.value = name;
+  state.role = "black";
+  state.mode = "online";
+  state.roomId = roomId;
+  state.players = { black: name, white: "等待加入" };
+  resetRoomRecord("当前房间");
+  updateShareLink(roomId);
+  state.message = "房间已创建，等待好友加入";
+  setStatus("等待加入", true);
+  resetBoard(false, "黑棋先手");
+  saveSession();
+
+  ensurePeer((peer) => {
+    bindHostConnections(peer);
+  }, roomId);
+}
+
+function resumeHostedRoom(roomId) {
   ensurePeer((peer) => {
     state.role = "black";
     state.mode = "online";
-    state.roomId = peer.id;
-    state.players = { black: name, white: "等待加入" };
-    resetRoomRecord("当前房间");
-    roomInput.value = peer.id;
-    const url = new URL("gomoku.html", window.location.href);
-    url.searchParams.set("room", peer.id);
-    shareInput.value = url.toString();
-    state.message = "房间已创建，等待好友加入";
-    setStatus("等待加入", true);
-    peer.on("connection", (conn) => {
-      if (state.conn && state.conn.open) {
-        conn.close();
-        return;
-      }
-      connectEvents(conn);
-    });
-    resetBoard(false, "黑棋先手");
-  });
+    state.roomId = roomId;
+    updateShareLink(roomId);
+    state.message = state.winner ? state.message : "房间已恢复，等待好友重新连接";
+    setStatus("房间已恢复", true);
+    bindHostConnections(peer);
+    if (state.winner) showResultModal();
+    render();
+    saveSession();
+  }, roomId);
 }
 
 function joinRoom() {
@@ -443,21 +549,29 @@ function joinRoom() {
   ensurePeer((peer) => {
     state.role = "white";
     state.mode = "online";
+    state.roomId = roomId;
     state.players = { black: "房主", white: name };
     resetRoomRecord("当前房间");
     connectEvents(peer.connect(roomId, { reliable: true }));
     state.message = "正在加入房间";
     render();
+    saveSession();
   });
 }
 
 function startLocal() {
+  if (state.conn && state.conn.open) state.conn.close();
+  if (state.peer && !state.peer.destroyed) state.peer.destroy();
+  state.peer = null;
+  state.conn = null;
   state.mode = "local";
   state.role = "both";
+  state.roomId = "local";
   state.players = { black: "本地玩家 A", white: "本地玩家 B" };
   resetRoomRecord("本地房间");
   setStatus("本地对战", true);
   resetBoard(false, "本地对战已开始");
+  saveSession();
 }
 
 function undoMove(broadcast = true) {
@@ -468,6 +582,7 @@ function undoMove(broadcast = true) {
   state.message = `已悔棋，轮到${colorName(state.turn)}`;
   if (broadcast) send({ type: "undo" });
   render();
+  saveSession();
 }
 
 function playAgain() {
@@ -479,16 +594,8 @@ function exitToLobby() {
   send({ type: "leave" });
   if (state.conn && state.conn.open) state.conn.close();
   if (state.peer && !state.peer.destroyed) state.peer.destroy();
+  clearSession();
   window.location.href = "index.html";
-}
-
-function handleRemoteLeave() {
-  resetRoomRecord("玩家离开后已重置");
-  resetBoard(false, "对方已退出，当前房间战绩已清零");
-  state.players = { black: "等待", white: "等待" };
-  state.mode = "idle";
-  setStatus("玩家退出");
-  render();
 }
 
 canvas.addEventListener("mousemove", (event) => {
@@ -536,6 +643,7 @@ window.render_game_to_text = () =>
     coordinateSystem: "15x15 board, rows and columns are zero-based from top-left",
     mode: state.mode,
     role: state.role,
+    roomId: state.roomId,
     turn: colorName(state.turn),
     winner: state.winner ? colorName(state.winner) : null,
     players: state.players,
@@ -553,8 +661,31 @@ window.advanceTime = () => {
 function boot() {
   nicknameInput.value = localStorage.getItem("linkplay-name") || randomName();
   nicknameInput.addEventListener("change", () => localStorage.setItem("linkplay-name", nicknameInput.value.trim()));
-  const room = new URLSearchParams(window.location.search).get("room");
-  if (room) roomInput.value = room;
+
+  const roomFromUrl = new URLSearchParams(window.location.search).get("room");
+  if (roomFromUrl) roomInput.value = roomFromUrl;
+
+  const saved = loadSession();
+  if (saved && (!roomFromUrl || saved.roomId === roomFromUrl || saved.mode === "local")) {
+    state.restoring = true;
+    applySession(saved);
+    state.restoring = false;
+
+    if (state.mode === "online" && state.role === "black" && state.roomId) {
+      resumeHostedRoom(state.roomId);
+      return;
+    }
+
+    if (state.mode === "online" && state.roomId) {
+      updateShareLink(state.roomId);
+      setStatus("等待重连", true);
+    } else if (state.mode === "local") {
+      setStatus("本地对战", true);
+    }
+
+    if (state.winner) showResultModal();
+  }
+
   render();
 }
 

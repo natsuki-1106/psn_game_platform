@@ -1,43 +1,54 @@
 const teamColors = ["red", "blue", "green", "gold"];
 const teamNames = ["红方", "蓝方", "绿方", "黄方"];
-const ludoTrack = [
-  [6, 1],
-  [6, 2],
-  [6, 3],
-  [6, 4],
-  [6, 5],
-  [5, 6],
-  [4, 6],
-  [3, 6],
-  [2, 6],
-  [1, 6],
-  [6, 7],
-  [7, 8],
-  [8, 7],
-  [9, 6],
-  [10, 6],
-  [11, 6],
-  [12, 6],
-  [13, 6],
-  [8, 6],
-  [8, 5],
-  [8, 4],
-  [8, 3],
-  [8, 2],
-  [8, 1],
+
+const ludoVisualCells = [
+  ...range(1, 6).flatMap((col) => [[7, col], [8, col], [9, col]]),
+  ...range(10, 15).flatMap((col) => [[7, col], [8, col], [9, col]]),
+  ...range(1, 6).flatMap((row) => [[row, 7], [row, 8], [row, 9]]),
+  ...range(10, 15).flatMap((row) => [[row, 7], [row, 8], [row, 9]]),
 ];
+
+const ludoTrack = [
+  [8, 1],
+  [8, 2],
+  [8, 3],
+  [8, 4],
+  [8, 5],
+  [8, 6],
+  [7, 7],
+  [6, 8],
+  [5, 8],
+  [4, 8],
+  [3, 8],
+  [2, 8],
+  [1, 8],
+  [7, 9],
+  [8, 10],
+  [8, 11],
+  [8, 12],
+  [8, 13],
+  [8, 14],
+  [8, 15],
+  [9, 9],
+  [10, 8],
+  [11, 8],
+  [12, 8],
+];
+
 const ludoHomeRuns = {
-  red: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]],
-  blue: [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7]],
-  green: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]],
-  gold: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]],
+  red: [[8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]],
+  blue: [[2, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8]],
+  green: [[8, 14], [8, 13], [8, 12], [8, 11], [8, 10], [8, 9]],
+  gold: [[14, 8], [13, 8], [12, 8], [11, 8], [10, 8], [9, 8]],
 };
+
 const ludoHomes = {
-  red: { row: 1, col: 1, label: "红方机场" },
-  blue: { row: 1, col: 10, label: "蓝方机场" },
+  red: { row: 2, col: 2, label: "红方机场" },
+  blue: { row: 2, col: 10, label: "蓝方机场" },
   green: { row: 10, col: 10, label: "绿方机场" },
-  gold: { row: 10, col: 1, label: "黄方机场" },
+  gold: { row: 10, col: 2, label: "黄方机场" },
 };
+
 const ludoState = { teams: [], turn: 0, dice: 0, started: false, over: false, room: null };
 
 const ludoBoard = document.querySelector("#ludoBoard");
@@ -59,6 +70,10 @@ ludoRoomApi = window.initRoomPanel({
     ludoRoomBadge.textContent = room.roomId ? `房间：${room.roomId}` : "房间：未进入";
   },
 });
+
+function range(start, end) {
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+}
 
 function startLudo() {
   const blocked = ludoRoomApi.requireHost();
@@ -98,7 +113,7 @@ function renderLudo() {
       const piece = document.createElement("button");
       piece.className = "piece-button";
       piece.type = "button";
-      piece.textContent = `${index + 1}号 ${pos < 0 ? "待起飞" : pos >= 23 ? "到达" : `航道 ${pos}`}`;
+      piece.textContent = `${index + 1}号 ${pos < 0 ? "待起飞" : pos >= ludoTrack.length - 1 ? "到达" : `航道 ${pos}`}`;
       piece.disabled = teamIndex !== ludoState.turn || ludoState.dice === 0 || ludoState.over;
       piece.addEventListener("click", () => moveLudoPiece(index));
       card.appendChild(piece);
@@ -111,8 +126,8 @@ function renderLudoHomes() {
   Object.entries(ludoHomes).forEach(([color, home]) => {
     const pad = document.createElement("div");
     pad.className = `ludo-home ${color}`;
-    pad.style.gridRow = `${home.row} / span 5`;
-    pad.style.gridColumn = `${home.col} / span 5`;
+    pad.style.gridRow = `${home.row} / span 4`;
+    pad.style.gridColumn = `${home.col} / span 4`;
     pad.innerHTML = `
       <strong>${home.label}</strong>
       <span></span><span></span><span></span><span></span>
@@ -122,12 +137,14 @@ function renderLudoHomes() {
 }
 
 function renderLudoRoutes() {
-  ludoTrack.forEach(([row, col], index) => {
+  const homeRunKeys = new Set(Object.values(ludoHomeRuns).flat().map(([row, col]) => `${row}-${col}`));
+  ludoVisualCells.forEach(([row, col], index) => {
+    const key = `${row}-${col}`;
+    if (row >= 7 && row <= 9 && col >= 7 && col <= 9) return;
     const cell = document.createElement("div");
-    cell.className = `ludo-cell ${teamColors[index % 4]} ${index === 0 ? "start" : ""}`;
+    cell.className = `ludo-cell ${homeRunKeys.has(key) ? "muted" : teamColors[index % 4]}`;
     cell.style.gridRow = row;
     cell.style.gridColumn = col;
-    cell.textContent = index === 0 ? "起" : "";
     ludoBoard.appendChild(cell);
   });
 
@@ -141,13 +158,27 @@ function renderLudoRoutes() {
       ludoBoard.appendChild(cell);
     });
   });
+
+  [
+    [8, 1, "red"],
+    [1, 8, "blue"],
+    [8, 15, "green"],
+    [15, 8, "gold"],
+  ].forEach(([row, col, color]) => {
+    const cell = document.createElement("div");
+    cell.className = `ludo-cell start ${color}`;
+    cell.style.gridRow = row;
+    cell.style.gridColumn = col;
+    cell.textContent = "起";
+    ludoBoard.appendChild(cell);
+  });
 }
 
 function renderLudoCenter() {
   const center = document.createElement("div");
   center.className = "ludo-center";
-  center.style.gridRow = "6 / span 4";
-  center.style.gridColumn = "6 / span 4";
+  center.style.gridRow = "7 / span 3";
+  center.style.gridColumn = "7 / span 3";
   center.innerHTML = "<span>✈</span><strong>终点</strong>";
   ludoBoard.appendChild(center);
 }
@@ -161,8 +192,8 @@ function renderLudoPlanes() {
       plane.dataset.label = pieceIndex + 1;
       if (pos < 0) {
         const home = ludoHomes[team.color];
-        plane.style.gridRow = home.row + 2 + Math.floor(pieceIndex / 2);
-        plane.style.gridColumn = home.col + 2 + (pieceIndex % 2);
+        plane.style.gridRow = home.row + 1 + Math.floor(pieceIndex / 2);
+        plane.style.gridColumn = home.col + 1 + (pieceIndex % 2);
       } else {
         const [row, col] = ludoTrack[Math.min(pos, ludoTrack.length - 1)];
         plane.style.gridRow = row;
@@ -193,10 +224,10 @@ function moveLudoPiece(pieceIndex) {
     }
     team.pieces[pieceIndex] = 0;
   } else {
-    team.pieces[pieceIndex] = Math.min(23, team.pieces[pieceIndex] + dice);
+    team.pieces[pieceIndex] = Math.min(ludoTrack.length - 1, team.pieces[pieceIndex] + dice);
   }
 
-  if (team.pieces.every((pos) => pos >= 23)) {
+  if (team.pieces.every((pos) => pos >= ludoTrack.length - 1)) {
     ludoState.over = true;
     ludoLog.textContent = `${team.name} 全部到达终点，获胜！`;
   } else {

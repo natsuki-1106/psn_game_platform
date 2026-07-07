@@ -22,3 +22,10 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Monopoly country cells now show CSS-drawn flag badges, country names, and prices so they render consistently on Windows instead of depending on emoji flags.
 - Updated shared styles for the new Ludo board, Monopoly world-board center, flags, price labels, and board-table presentation.
 - Verified with `npm test` and screenshots at `outputs/ludo-classic-board.png` and `outputs/monopoly-global-board-v3.png`.
+
+## 2026-07-07 Ludo Symmetry and Monopoly Readability Fix
+
+- Reworked Ludo visual routes into a symmetrical 15x15 cross board, with smaller 4x4 airport areas and a centered 3x3 finish zone.
+- Kept Ludo gameplay state compatible with the existing simple movement test while using the improved visual route coordinates.
+- Moved Monopoly asset cards below the board and enlarged board cells so flag, country name, and price labels no longer overlap.
+- Verified with `npm test` and screenshots at `outputs/ludo-symmetric-v2.png` and `outputs/monopoly-readable-v2.png`.

@@ -752,7 +752,7 @@ canvas {
 
 .monopoly-layout {
   display: grid;
-  grid-template-columns: minmax(720px, 1fr) 300px;
+  grid-template-columns: minmax(760px, 1fr);
   gap: 22px;
   align-items: start;
 }
@@ -760,10 +760,10 @@ canvas {
 .monopoly-map {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(11, minmax(58px, 1fr));
-  grid-template-rows: repeat(11, minmax(58px, 1fr));
+  grid-template-columns: repeat(11, minmax(68px, 1fr));
+  grid-template-rows: repeat(11, minmax(68px, 1fr));
   gap: 3px;
-  width: min(100%, 920px);
+  width: min(100%, 1040px);
   aspect-ratio: 1;
   padding: 16px;
   border: 10px solid #273c57;
@@ -843,11 +843,11 @@ canvas {
 .monopoly-cell {
   position: relative;
   display: grid;
-  grid-template-rows: 16px 1fr auto;
+  grid-template-rows: 18px 1fr auto;
   gap: 2px;
   min-width: 0;
   min-height: 0;
-  padding: 4px;
+  padding: 5px 4px 4px;
   border: 1px solid rgba(23, 33, 43, 0.22);
   border-radius: 3px;
   background: linear-gradient(180deg, #fffdf7, #f7f0df);
@@ -859,14 +859,15 @@ canvas {
 .monopoly-cell strong {
   display: grid;
   align-items: center;
-  min-height: 18px;
-  font-size: clamp(9px, 0.82vw, 11px);
-  line-height: 1.05;
+  min-height: 22px;
+  font-size: 11px;
+  line-height: 1.12;
+  word-break: keep-all;
 }
 
 .monopoly-cell small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -883,8 +884,8 @@ canvas {
   position: relative;
   display: block;
   justify-self: center;
-  width: 30px;
-  height: 15px;
+  width: 34px;
+  height: 18px;
   border: 1px solid rgba(23, 33, 43, 0.2);
   border-radius: 2px;
   overflow: hidden;
@@ -906,8 +907,8 @@ canvas {
 .country-symbol {
   display: grid;
   place-items: center;
-  min-height: 15px;
-  font-size: 15px;
+  min-height: 18px;
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -1063,17 +1064,21 @@ canvas {
   box-shadow: 0 16px 32px rgba(23, 33, 43, 0.08);
 }
 
+.monopoly-sidecard .stat-grid {
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+}
+
 .ludo-layout {
-  grid-template-columns: minmax(620px, 780px) 300px;
+  grid-template-columns: minmax(620px, 740px) 300px;
 }
 
 .ludo-map {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(15, minmax(34px, 1fr));
-  grid-template-rows: repeat(15, minmax(34px, 1fr));
+  grid-template-columns: repeat(15, minmax(32px, 1fr));
+  grid-template-rows: repeat(15, minmax(32px, 1fr));
   gap: 3px;
-  width: min(100%, 780px);
+  width: min(100%, 740px);
   aspect-ratio: 1;
   padding: 14px;
   border: 8px solid #1f2d3d;
@@ -1090,10 +1095,10 @@ canvas {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: auto repeat(2, 1fr);
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   justify-items: center;
-  padding: 14px;
+  padding: 10px;
   border: 3px solid currentColor;
   border-radius: 8px;
   background: #fff;
@@ -1103,11 +1108,11 @@ canvas {
 
 .ludo-home strong {
   grid-column: 1 / -1;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .ludo-home span {
-  width: 68%;
+  width: 58%;
   aspect-ratio: 1;
   border: 2px solid rgba(23, 33, 43, 0.12);
   border-radius: 50%;
@@ -1149,6 +1154,11 @@ canvas {
   color: #7a8795;
   font-size: 11px;
   font-weight: 900;
+}
+
+.ludo-cell.muted {
+  color: #9aa8b5;
+  background: #fff;
 }
 
 .ludo-cell.red,

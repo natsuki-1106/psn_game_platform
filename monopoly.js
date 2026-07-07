@@ -1,44 +1,44 @@
 const monopolyCells = [
-  { name: "起点", type: "corner", action: "start" },
-  { name: "中山路", type: "property", price: 120, rent: 30, group: "teal" },
-  { name: "机会", type: "chance" },
-  { name: "书店街", type: "property", price: 140, rent: 35, group: "teal" },
-  { name: "所得税", type: "tax", fee: 100 },
-  { name: "东站", type: "station", price: 200, rent: 45 },
-  { name: "樱花路", type: "property", price: 180, rent: 45, group: "pink" },
-  { name: "命运", type: "chance" },
-  { name: "湖滨路", type: "property", price: 200, rent: 55, group: "pink" },
-  { name: "咖啡街", type: "property", price: 220, rent: 60, group: "pink" },
-  { name: "探监", type: "corner", action: "visit" },
-  { name: "科技园", type: "property", price: 240, rent: 70, group: "blue" },
-  { name: "电力局", type: "utility", price: 160, rent: 50 },
-  { name: "创业街", type: "property", price: 260, rent: 75, group: "blue" },
-  { name: "滨海大道", type: "property", price: 280, rent: 80, group: "blue" },
-  { name: "南站", type: "station", price: 200, rent: 45 },
-  { name: "枫叶巷", type: "property", price: 300, rent: 90, group: "orange" },
-  { name: "机会", type: "chance" },
-  { name: "剧院街", type: "property", price: 320, rent: 95, group: "orange" },
-  { name: "博物馆", type: "property", price: 340, rent: 100, group: "orange" },
-  { name: "免费停车", type: "corner", action: "parking" },
-  { name: "金融街", type: "property", price: 360, rent: 110, group: "green" },
-  { name: "命运", type: "chance" },
-  { name: "花园路", type: "property", price: 380, rent: 115, group: "green" },
-  { name: "商业中心", type: "property", price: 400, rent: 125, group: "green" },
-  { name: "西站", type: "station", price: 200, rent: 45 },
-  { name: "星光大道", type: "property", price: 420, rent: 135, group: "gold" },
-  { name: "水务局", type: "utility", price: 160, rent: 50 },
-  { name: "港口路", type: "property", price: 440, rent: 145, group: "gold" },
-  { name: "中心广场", type: "property", price: 460, rent: 155, group: "gold" },
-  { name: "进监狱", type: "corner", action: "jail" },
-  { name: "大学城", type: "property", price: 480, rent: 165, group: "red" },
-  { name: "研究院", type: "property", price: 500, rent: 175, group: "red" },
-  { name: "机会", type: "chance" },
-  { name: "机场路", type: "property", price: 520, rent: 185, group: "red" },
-  { name: "北站", type: "station", price: 200, rent: 45 },
-  { name: "王府井", type: "property", price: 560, rent: 200, group: "black" },
-  { name: "奢侈税", type: "tax", fee: 160 },
-  { name: "外滩", type: "property", price: 580, rent: 220, group: "black" },
-  { name: "和平饭店", type: "property", price: 600, rent: 240, group: "black" },
+  { name: "起点", type: "corner", action: "start", flag: "🌐", label: "GO" },
+  { name: "巴西", type: "property", price: 120, rent: 30, group: "teal", code: "BR" },
+  { name: "机会", type: "chance", flag: "🎲" },
+  { name: "阿根廷", type: "property", price: 140, rent: 35, group: "teal", code: "AR" },
+  { name: "关税", type: "tax", fee: 100, flag: "🧾" },
+  { name: "南美航线", type: "station", price: 200, rent: 45, flag: "✈️" },
+  { name: "埃及", type: "property", price: 180, rent: 45, group: "pink", code: "EG" },
+  { name: "命运", type: "chance", flag: "✨" },
+  { name: "南非", type: "property", price: 200, rent: 55, group: "pink", code: "ZA" },
+  { name: "摩洛哥", type: "property", price: 220, rent: 60, group: "pink", code: "MA" },
+  { name: "探监", type: "corner", action: "visit", flag: "🧭" },
+  { name: "西班牙", type: "property", price: 240, rent: 70, group: "blue", code: "ES" },
+  { name: "电力公司", type: "utility", price: 160, rent: 50, flag: "⚡" },
+  { name: "法国", type: "property", price: 260, rent: 75, group: "blue", code: "FR" },
+  { name: "德国", type: "property", price: 280, rent: 80, group: "blue", code: "DE" },
+  { name: "欧洲航线", type: "station", price: 200, rent: 45, flag: "✈️" },
+  { name: "意大利", type: "property", price: 300, rent: 90, group: "orange", code: "IT" },
+  { name: "机会", type: "chance", flag: "🎲" },
+  { name: "英国", type: "property", price: 320, rent: 95, group: "orange", code: "GB" },
+  { name: "瑞士", type: "property", price: 340, rent: 100, group: "orange", code: "CH" },
+  { name: "免费停车", type: "corner", action: "parking", flag: "🅿️" },
+  { name: "土耳其", type: "property", price: 360, rent: 110, group: "green", code: "TR" },
+  { name: "命运", type: "chance", flag: "✨" },
+  { name: "印度", type: "property", price: 380, rent: 115, group: "green", code: "IN" },
+  { name: "新加坡", type: "property", price: 400, rent: 125, group: "green", code: "SG" },
+  { name: "亚洲航线", type: "station", price: 200, rent: 45, flag: "✈️" },
+  { name: "韩国", type: "property", price: 420, rent: 135, group: "gold", code: "KR" },
+  { name: "水务公司", type: "utility", price: 160, rent: 50, flag: "💧" },
+  { name: "日本", type: "property", price: 440, rent: 145, group: "gold", code: "JP" },
+  { name: "中国", type: "property", price: 460, rent: 155, group: "gold", code: "CN" },
+  { name: "进监狱", type: "corner", action: "jail", flag: "🚓" },
+  { name: "澳大利亚", type: "property", price: 480, rent: 165, group: "red", code: "AU" },
+  { name: "新西兰", type: "property", price: 500, rent: 175, group: "red", code: "NZ" },
+  { name: "机会", type: "chance", flag: "🎲" },
+  { name: "加拿大", type: "property", price: 520, rent: 185, group: "red", code: "CA" },
+  { name: "北美航线", type: "station", price: 200, rent: 45, flag: "✈️" },
+  { name: "美国", type: "property", price: 560, rent: 200, group: "black", code: "US" },
+  { name: "奢侈税", type: "tax", fee: 160, flag: "💳" },
+  { name: "墨西哥", type: "property", price: 580, rent: 220, group: "black", code: "MX" },
+  { name: "世界银行", type: "property", price: 600, rent: 240, group: "black", flag: "🏦" },
 ];
 
 const colors = ["red", "blue", "green", "gold"];
@@ -91,9 +91,9 @@ function startMonopoly() {
   monopolyState.dice = 0;
   monopolyState.started = true;
   monopolyState.over = false;
-  monopolyLog.textContent = `${count} 人游戏开始。`;
-  monopolyCenterTitle.textContent = "开局";
-  monopolyCenterText.textContent = "掷骰子沿环形地图前进，自动购买空地，踩到他人地块支付租金。";
+  monopolyLog.textContent = `${count} 人环球地产局开始。`;
+  monopolyCenterTitle.textContent = "环球开局";
+  monopolyCenterText.textContent = "按标准 40 格大富翁路线行动，国家地块显示国旗与价格。";
   renderMonopoly();
 }
 
@@ -115,9 +115,10 @@ function renderMonopoly() {
     div.style.gridRow = pos.row;
     div.style.gridColumn = pos.col;
     div.innerHTML = `
-      <span class="cell-index">${index}</span>
+      <span class="cell-index">${String(index).padStart(2, "0")}</span>
+      ${countryFlagHtml(cell)}
       <strong>${cell.name}</strong>
-      <small>${cell.price ? `$${cell.price}` : cell.fee ? `-$${cell.fee}` : cell.type}</small>
+      <small>${cell.price ? `$${cell.price}` : cell.fee ? `-$${cell.fee}` : cell.label || cell.type}</small>
     `;
     if (typeof cell.owner === "number") {
       const owner = document.createElement("span");
@@ -213,9 +214,9 @@ function resolveCell(player, cell) {
       cell.owner = monopolyState.players.indexOf(player);
       player.money -= cell.price;
       player.properties.push(cell.name);
-      monopolyLog.textContent = `${player.name} 购买 ${cell.name}。`;
+      monopolyLog.textContent = `${player.name} 买入 ${cell.name}。`;
       monopolyCenterTitle.textContent = cell.name;
-      monopolyCenterText.textContent = `买入价格 $${cell.price}`;
+      monopolyCenterText.textContent = `买入价格 $${cell.price}，租金 $${cell.rent}`;
     } else if (cell.owner !== undefined && monopolyState.players[cell.owner] !== player) {
       const owner = monopolyState.players[cell.owner];
       player.money -= cell.rent;
@@ -238,6 +239,13 @@ function resolveCell(player, cell) {
 
 function nextTurn() {
   monopolyState.turn = (monopolyState.turn + 1) % monopolyState.players.length;
+}
+
+function countryFlagHtml(cell) {
+  if (cell.code) {
+    return `<span class="country-flag flag-${cell.code.toLowerCase()}" aria-label="${cell.name}国旗"><i>${cell.code}</i></span>`;
+  }
+  return `<span class="country-symbol">${cell.flag || ""}</span>`;
 }
 
 window.render_game_to_text = () => JSON.stringify(monopolyState);

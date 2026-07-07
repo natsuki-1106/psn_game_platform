@@ -15,7 +15,7 @@
           <div class="brand-mark">LP</div>
           <div>
             <h1>大富翁</h1>
-            <p>房间制 2-4 人本地版</p>
+            <p>房间制 2-4 人环球地产局</p>
           </div>
         </div>
         <a class="back-link" href="index.html">返回游戏大厅</a>
@@ -61,14 +61,14 @@
           <strong id="monopolyTurn">等待开始</strong>
           <button id="rollMonopolyBtn" class="primary-btn" type="button">掷骰子</button>
           <button id="resetMonopolyBtn" type="button">重新开始</button>
-          <p id="monopolyLog" class="mini-note">先创建房间，再由房主选择人数并开始。</p>
+          <p id="monopolyLog" class="mini-note">全球国家地产版地图，落到空地会自动买入，落到他人地块则支付租金。</p>
         </section>
       </aside>
 
       <main class="single-stage">
         <header class="stage-header">
           <div>
-            <p class="eyebrow">Monopoly Board</p>
+            <p class="eyebrow">Global Estates</p>
             <h2>大富翁</h2>
           </div>
           <div class="score-strip">
@@ -77,15 +77,20 @@
         </header>
 
         <section class="monopoly-layout">
-          <div id="monopolyBoard" class="monopoly-map" aria-label="大富翁环形棋盘">
+          <div id="monopolyBoard" class="monopoly-map" aria-label="环球大富翁棋盘">
             <div class="monopoly-center">
-              <p class="eyebrow">Bank</p>
+              <p class="eyebrow">World Bank</p>
               <h3 id="monopolyCenterTitle">等待开局</h3>
-              <p id="monopolyCenterText">四边环形地图，包含地块、车站、机会、税务和监狱。</p>
+              <p id="monopolyCenterText">围绕全球城市与国家航线行动，抢占高价值地块并保持现金流。</p>
+              <div class="monopoly-center-globe" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
               <div id="monopolyDice" class="monopoly-dice">-</div>
             </div>
           </div>
-          <aside class="info-card">
+          <aside class="info-card monopoly-sidecard">
             <h3>资产与地块</h3>
             <div id="monopolyStats" class="stat-grid"></div>
           </aside>

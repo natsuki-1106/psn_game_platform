@@ -15,10 +15,11 @@
           <div class="brand-mark">LP</div>
           <div>
             <h1>飞行棋</h1>
-            <p>本地双人双机</p>
+            <p>房间制 2-4 人经典棋盘</p>
           </div>
         </div>
         <a class="back-link" href="index.html">返回游戏大厅</a>
+
         <section class="connection-panel" aria-label="房间面板">
           <div class="panel-title">
             <h2>房间</h2>
@@ -41,6 +42,7 @@
             <button id="copyBtn" type="button">复制</button>
           </div>
         </section>
+
         <section class="control-card">
           <h3>开局</h3>
           <label>
@@ -53,29 +55,32 @@
           </label>
           <button id="startLudoBtn" class="primary-btn" type="button">开始游戏</button>
         </section>
+
         <section class="control-card">
           <h3>回合</h3>
-          <strong id="ludoTurn">红方</strong>
+          <strong id="ludoTurn">等待开始</strong>
           <button id="rollLudoBtn" class="primary-btn" type="button">掷骰子</button>
           <button id="resetLudoBtn" type="button">重新开始</button>
-          <p id="ludoLog" class="mini-note">掷到 6 可以让飞机起飞。</p>
+          <p id="ludoLog" class="mini-note">掷到 6 可以让飞机起飞，进入彩色航道后冲向中央终点。</p>
         </section>
       </aside>
+
       <main class="single-stage">
         <header class="stage-header">
           <div>
-            <p class="eyebrow">Flight Race</p>
+            <p class="eyebrow">Classic Ludo</p>
             <h2>飞行棋</h2>
           </div>
           <div class="score-strip">
             <span id="ludoRoomBadge">房间：未进入</span>
           </div>
         </header>
-        <section class="single-layout">
-          <div id="ludoBoard" class="board-ring" aria-label="飞行棋跑道"></div>
-          <aside class="info-card">
-            <h3>飞机</h3>
-            <div id="ludoPieces" class="chip-list"></div>
+
+        <section class="single-layout ludo-layout">
+          <div id="ludoBoard" class="ludo-map" aria-label="飞行棋棋盘"></div>
+          <aside class="info-card ludo-sidecard">
+            <h3>机队</h3>
+            <div id="ludoPieces" class="ludo-team-list"></div>
           </aside>
         </section>
       </main>

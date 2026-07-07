@@ -14,3 +14,11 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Changed Landlord card rendering so internal IDs like `9C` are no longer shown on the card face.
 - Added poker-style corner rank/suit labels, center suit pips, red/black suit coloring, and Joker cards.
 - Verified with `npm test` and a Playwright screenshot at `outputs/landlord-cards.png`.
+
+## 2026-07-07 Ludo and Monopoly Board Polish
+
+- Rebuilt `ludo.html` and `ludo.js` as clean UTF-8 and changed the board to a classic four-corner airport + cross-route layout inspired by public Ludo board references.
+- Rebuilt `monopoly.html` and `monopoly.js` as clean UTF-8 and changed the map to a global country estate board.
+- Monopoly country cells now show CSS-drawn flag badges, country names, and prices so they render consistently on Windows instead of depending on emoji flags.
+- Updated shared styles for the new Ludo board, Monopoly world-board center, flags, price labels, and board-table presentation.
+- Verified with `npm test` and screenshots at `outputs/ludo-classic-board.png` and `outputs/monopoly-global-board-v3.png`.

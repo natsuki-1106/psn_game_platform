@@ -48,29 +48,68 @@ callLandlordBtn.addEventListener("click", () => bidLandlord(true));
 passBidBtn.addEventListener("click", () => bidLandlord(false));
 hintCardsBtn.addEventListener("click", hintCards);
 
-const landlordRoomApi = window.initRoomPanel({
+let landlordRoomApi = null;
+
+landlordRoomApi = window.initRoomPanel({
   gameKey: "landlord",
   prefix: "DD",
+  getSnapshot: () => landlordState,
+  onRemoteState(snapshot) {
+    landlordState.seats = snapshot.seats || landlordState.seats;
+    landlordState.bottomCards = snapshot.bottomCards || [];
+    landlordState.selected = [];
+    landlordState.lastPlay = snapshot.lastPlay || null;
+    landlordState.passes = snapshot.passes || 0;
+    landlordState.turn = snapshot.turn || 0;
+    landlordState.started = Boolean(snapshot.started);
+    landlordState.over = Boolean(snapshot.over);
+    landlordState.phase = snapshot.phase || "idle";
+    landlordState.multiplier = snapshot.multiplier || 1;
+    landlordState.biddingTurn = snapshot.biddingTurn || 0;
+    landlordState.landlordIndex = snapshot.landlordIndex ?? null;
+    landlordState.highestBidder = snapshot.highestBidder ?? null;
+    landlordState.bidHistory = snapshot.bidHistory || [];
+    renderLandlord();
+  },
   onRoomChange(room) {
     landlordState.room = room;
     landlordRoomBadge.textContent = room.roomId ? `房间：${room.roomId}` : "房间：未进入";
+    renderLandlord();
   },
 });
 
+function localSeatIndex() {
+  return landlordRoomApi?.localSeatIndex?.() || 0;
+}
+
+function isLocalSeat(index) {
+  if (index === localSeatIndex()) return true;
+  return landlordRoomApi?.isHost?.() && landlordRoomApi?.connectionCount?.() === 0 && landlordState.seats[index]?.type === "human";
+}
+
+function syncLandlord() {
+  landlordRoomApi.broadcast(landlordState);
+}
+
 function addHuman() {
+  if (landlordRoomApi.hasRoom() && !landlordRoomApi.isHost()) return;
   const humanCount = landlordState.seats.filter((seat) => seat.type === "human").length;
   if (humanCount >= 2 || landlordState.seats.length >= 3 || landlordState.started) return;
   landlordState.seats.push({ name: `玩家 ${String.fromCharCode(65 + humanCount)}`, type: "human", hand: [] });
   renderLandlord();
+  syncLandlord();
 }
 
 function addRobot() {
+  if (landlordRoomApi.hasRoom() && !landlordRoomApi.isHost()) return;
   if (landlordState.seats.length >= 3 || landlordState.started) return;
   landlordState.seats.push({ name: "机器人", type: "robot", hand: [] });
   renderLandlord();
+  syncLandlord();
 }
 
 function resetRoom() {
+  if (landlordRoomApi.hasRoom() && !landlordRoomApi.isHost()) return;
   landlordState.seats = [
     { name: "玩家 A", type: "human", hand: [] },
     { name: "玩家 B", type: "human", hand: [] },
@@ -90,6 +129,7 @@ function resetRoom() {
   landlordState.bidHistory = [];
   landlordLog.textContent = "两名真人已就位，可以启动机器人或直接开始。";
   renderLandlord();
+  syncLandlord();
 }
 
 function buildDeck() {
@@ -134,6 +174,7 @@ function startLandlord() {
   landlordState.bidHistory = [];
   landlordLog.textContent = `${landlordState.seats[0].name} 先叫地主。`;
   renderLandlord();
+  syncLandlord();
   maybeRobotBid();
 }
 
@@ -144,6 +185,7 @@ function sortHand(hand) {
 function bidLandlord(call) {
   if (!landlordState.started || landlordState.phase !== "bidding" || landlordState.over) return;
   const seat = landlordState.seats[landlordState.biddingTurn];
+  if (!isLocalSeat(landlordState.biddingTurn)) return;
   if (seat.type === "robot") return;
   resolveBid(call);
 }
@@ -168,6 +210,7 @@ function resolveBid(call) {
 
   landlordState.biddingTurn = (landlordState.biddingTurn + 1) % landlordState.seats.length;
   renderLandlord();
+  syncLandlord();
   maybeRobotBid();
 }
 
@@ -182,6 +225,7 @@ function finalizeLandlord(index) {
   landlordState.turn = index;
   landlordLog.textContent = `${landlordState.seats[index].name} 成为地主，获得 3 张底牌。`;
   renderLandlord();
+  syncLandlord();
   maybeRobotTurn();
 }
 
@@ -291,6 +335,7 @@ function hintCards() {
 function playSelectedCards() {
   if (!landlordState.started || landlordState.phase !== "playing" || landlordState.over) return;
   const player = landlordState.seats[landlordState.turn];
+  if (!isLocalSeat(landlordState.turn) && player.type !== "robot") return;
   if (player.type === "robot") return robotPlay();
   const cards = landlordState.selected.map((index) => player.hand[index]);
   submitPlay(cards);
@@ -323,6 +368,7 @@ function submitPlay(cards) {
     maybeRobotTurn();
   }
   renderLandlord();
+  syncLandlord();
   return true;
 }
 
@@ -340,6 +386,7 @@ function maybeRobotTurn() {
 
 function passCards() {
   if (!landlordState.started || landlordState.phase !== "playing" || landlordState.over || !landlordState.lastPlay) return;
+  if (!isLocalSeat(landlordState.turn) && landlordState.seats[landlordState.turn]?.type !== "robot") return;
   landlordState.passes += 1;
   if (landlordState.passes >= 2) {
     landlordState.lastPlay = null;
@@ -349,6 +396,7 @@ function passCards() {
   landlordState.selected = [];
   nextLandlordTurn();
   renderLandlord();
+  syncLandlord();
   maybeRobotTurn();
 }
 
@@ -377,12 +425,13 @@ function jokerTone(card) {
 function renderLandlord() {
   const full = landlordState.seats.length >= 3;
   const current = landlordState.seats[landlordState.turn];
+  const localIndex = localSeatIndex();
 
-  addHumanBtn.disabled = landlordState.seats.filter((seat) => seat.type === "human").length >= 2 || full || landlordState.started;
-  addRobotBtn.disabled = full || landlordState.started;
-  callLandlordBtn.disabled = landlordState.phase !== "bidding" || current?.type !== "human";
-  passBidBtn.disabled = landlordState.phase !== "bidding" || current?.type !== "human";
-  hintCardsBtn.disabled = landlordState.phase !== "playing";
+  addHumanBtn.disabled = !landlordRoomApi?.isHost?.() || landlordState.seats.filter((seat) => seat.type === "human").length >= 2 || full || landlordState.started;
+  addRobotBtn.disabled = !landlordRoomApi?.isHost?.() || full || landlordState.started;
+  callLandlordBtn.disabled = landlordState.phase !== "bidding" || !isLocalSeat(landlordState.biddingTurn) || landlordState.seats[landlordState.biddingTurn]?.type !== "human";
+  passBidBtn.disabled = landlordState.phase !== "bidding" || !isLocalSeat(landlordState.biddingTurn) || landlordState.seats[landlordState.biddingTurn]?.type !== "human";
+  hintCardsBtn.disabled = landlordState.phase !== "playing" || !isLocalSeat(landlordState.turn);
 
   landlordRoomLog.textContent = full ? "座位已满，不能再加机器人。" : "未满时可以启动机器人补位。";
   landlordPhase.textContent =
@@ -418,10 +467,10 @@ function renderLandlord() {
     `;
     const hand = document.createElement("div");
     hand.className = "card-hand";
-    const visible = player.type === "human" && (playerIndex === 0 || landlordState.phase === "idle");
+    const visible = player.type === "human" && (playerIndex === localIndex || landlordState.phase === "idle");
 
     player.hand.forEach((card, cardIndex) => {
-      const enabled = landlordState.phase === "playing" && playerIndex === landlordState.turn && player.type === "human" && !landlordState.over;
+      const enabled = landlordState.phase === "playing" && playerIndex === landlordState.turn && playerIndex === localIndex && player.type === "human" && !landlordState.over;
       const node = visible ? cardButton(card, enabled) : cardBack("side");
       if (visible && enabled && landlordState.selected.includes(cardIndex)) node.classList.add("selected");
       if (visible) {
@@ -471,7 +520,7 @@ window.render_game_to_text = () =>
     seats: landlordState.seats.map((seat, index) => ({
       ...seat,
       handCount: seat.hand.length,
-      hand: index === 0 ? seat.hand : seat.hand.map(() => ({ hidden: true })),
+      hand: index === localSeatIndex() ? seat.hand : seat.hand.map(() => ({ hidden: true })),
     })),
   });
 window.advanceTime = () => renderLandlord();

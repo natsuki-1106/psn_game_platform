@@ -65,11 +65,22 @@ document.querySelector("#resetLudoBtn").addEventListener("click", startLudo);
 ludoRoomApi = window.initRoomPanel({
   gameKey: "ludo",
   prefix: "FQ",
+  getSnapshot: () => ludoState,
+  onRemoteState(snapshot) {
+    const localRoom = ludoState.room;
+    Object.assign(ludoState, snapshot);
+    ludoState.room = localRoom;
+    renderLudo();
+  },
   onRoomChange(room) {
     ludoState.room = room;
     ludoRoomBadge.textContent = room.roomId ? `房间：${room.roomId}` : "房间：未进入";
   },
 });
+
+function syncLudo() {
+  ludoRoomApi.broadcast(ludoState);
+}
 
 function range(start, end) {
   return Array.from({ length: end - start + 1 }, (_, index) => start + index);
@@ -94,6 +105,7 @@ function startLudo() {
   ludoState.over = false;
   ludoLog.textContent = `${count} 人飞行棋开始，掷到 6 可以起飞。`;
   renderLudo();
+  syncLudo();
 }
 
 function renderLudo() {
@@ -209,6 +221,7 @@ function rollLudo() {
   ludoState.dice = Math.floor(Math.random() * 6) + 1;
   ludoLog.textContent = `${ludoState.teams[ludoState.turn].name} 掷出 ${ludoState.dice}。`;
   renderLudo();
+  syncLudo();
 }
 
 function moveLudoPiece(pieceIndex) {
@@ -220,6 +233,8 @@ function moveLudoPiece(pieceIndex) {
     if (dice !== 6) {
       ludoLog.textContent = "只有掷到 6 才能起飞。";
       endLudoTurn();
+      renderLudo();
+      syncLudo();
       return;
     }
     team.pieces[pieceIndex] = 0;
@@ -235,6 +250,7 @@ function moveLudoPiece(pieceIndex) {
     endLudoTurn();
   }
   renderLudo();
+  syncLudo();
 }
 
 function endLudoTurn() {

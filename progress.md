@@ -51,3 +51,12 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Room share links now preserve `peerHost`, `peerPort`, `peerPath`, `peerSecure`, `peerKey`, `turnUrls`, `turnUsername`, and `turnCredential` so custom networking config survives remote joins.
 - Verified Gomoku with a two-browser remote-style sync test: host created a room, guest joined by room link, black move synced to guest, and white move synced back to host.
 - Verified with `node tests/gomoku-smoke.cjs` and full `npm test`.
+
+## 2026-07-07 Shared Self-Hosted Signaling Upgrade
+
+- Added `server.js` so `npm start` now runs the static site and a built-in same-origin PeerServer at `/peerjs`.
+- Vendored `peerjs.min.js` into `vendor/peerjs.min.js` so browser clients no longer depend on `unpkg` being reachable.
+- Updated Gomoku to prefer same-origin `/peerjs` on normal Node hosting and only fall back to PeerJS Cloud on `file:` / `github.io`.
+- Upgraded `room-common.js` from local-only room badges to a reusable PeerJS room transport layer.
+- Connected Ludo, Monopoly, Chinese Checkers, and Landlord room panels to real room state sync, with host-authoritative state broadcast after game actions.
+- Landlord remote sync now treats host as seat A and guest as seat B so each human player only sees their own hand while still seeing the shared desk state.

@@ -54,3 +54,13 @@ npm test
 GitHub Pages 只能托管静态文件，不能运行 WebSocket 服务。五子棋使用 PeerJS 公共信令服务器完成房间发现，实际对局数据通过玩家浏览器之间的 WebRTC 连接传输。
 
 当前的刷新恢复使用浏览器 `localStorage` 保存同一浏览器里的房间状态；如果换设备、换浏览器或清除缓存，就不能恢复历史棋盘。生产环境如果需要跨设备持久房间，可以把房间状态放到自建 PeerServer、Firebase、Supabase 或 Colyseus。
+
+## Self-hosted PeerServer
+
+`npm start` now launches a Node server that serves both the static site and a built-in PeerServer on the same origin.
+
+- Site: `http://127.0.0.1:8080`
+- Peer signaling: `http://127.0.0.1:8080/peerjs`
+- Browser PeerJS bundle: `vendor/peerjs.min.js`
+
+On a normal Node host, Gomoku, Ludo, Monopoly, Chinese Checkers, and Landlord now prefer the same-origin PeerServer by default. GitHub Pages still cannot host the WebSocket signaling service, so pure Pages deployment falls back to public PeerJS Cloud only for pages that need remote signaling.

@@ -2,9 +2,9 @@
   "name": "psn",
   "version": "1.0.0",
   "description": "GitHub Pages friendly multiplayer mini-game platform with Gomoku.",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "python -m http.server 8080",
+    "start": "node server.js",
     "test": "node tests/lobby-smoke.cjs && node tests/gomoku-smoke.cjs && node tests/games-smoke.cjs"
   },
   "keywords": [],
@@ -13,5 +13,10 @@
   "type": "commonjs",
   "devDependencies": {
     "playwright": "^1.61.1"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "peer": "^1.0.2",
+    "peerjs": "^1.5.5"
   }
 }

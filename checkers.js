@@ -30,11 +30,22 @@ const checkersState = {
 const checkersRoomApi = window.initRoomPanel({
   gameKey: "checkers",
   prefix: "TQ",
+  getSnapshot: () => checkersState,
+  onRemoteState(snapshot) {
+    const localRoom = checkersState.room;
+    Object.assign(checkersState, snapshot);
+    checkersState.room = localRoom;
+    renderCheckers();
+  },
   onRoomChange(room) {
     checkersState.room = room;
     checkersRoomBadge.textContent = room.roomId ? `房间：${room.roomId}` : "房间：未进入";
   },
 });
+
+function syncCheckers() {
+  checkersRoomApi.broadcast(checkersState);
+}
 
 document.querySelector("#startCheckersBtn").addEventListener("click", startCheckers);
 document.querySelector("#resetCheckersBtn").addEventListener("click", startCheckers);
@@ -96,6 +107,7 @@ function startCheckers() {
   checkersState.over = false;
   checkersLog.textContent = `${count} 人跳棋开始。点击当前玩家棋子，再点击高亮目标点。`;
   renderCheckers();
+  syncCheckers();
 }
 
 function currentPlayer() {
@@ -149,6 +161,7 @@ function clickChecker(row, index) {
     checkersState.selected = true;
     checkersState.targets = legalTargets(player);
     renderCheckers();
+    syncCheckers();
     return;
   }
   const target = checkersState.targets.find((item) => item.row === row && item.index === index);
@@ -166,6 +179,7 @@ function clickChecker(row, index) {
     checkersLog.textContent = `轮到 ${currentPlayer().name}。`;
   }
   renderCheckers();
+  syncCheckers();
 }
 
 function renderCheckers() {

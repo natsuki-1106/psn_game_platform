@@ -61,11 +61,33 @@ document.querySelector("#resetMonopolyBtn").addEventListener("click", startMonop
 roomApi = window.initRoomPanel({
   gameKey: "monopoly",
   prefix: "DF",
+  getSnapshot: () => ({
+    ...monopolyState,
+    cells: monopolyCells.map((cell) => ({ owner: cell.owner })),
+  }),
+  onRemoteState(snapshot) {
+    monopolyState.players = snapshot.players || [];
+    monopolyState.turn = snapshot.turn || 0;
+    monopolyState.dice = snapshot.dice || 0;
+    monopolyState.started = Boolean(snapshot.started);
+    monopolyState.over = Boolean(snapshot.over);
+    monopolyCells.forEach((cell, index) => {
+      cell.owner = snapshot.cells?.[index]?.owner;
+    });
+    renderMonopoly();
+  },
   onRoomChange(room) {
     monopolyState.room = room;
     monopolyRoomBadge.textContent = room.roomId ? `房间：${room.roomId}` : "房间：未进入";
   },
 });
+
+function syncMonopoly() {
+  roomApi.broadcast({
+    ...monopolyState,
+    cells: monopolyCells.map((cell) => ({ owner: cell.owner })),
+  });
+}
 
 function startMonopoly() {
   const blocked = roomApi.requireHost();
@@ -95,6 +117,7 @@ function startMonopoly() {
   monopolyCenterTitle.textContent = "环球开局";
   monopolyCenterText.textContent = "按标准 40 格大富翁路线行动，国家地块显示国旗与价格。";
   renderMonopoly();
+  syncMonopoly();
 }
 
 function cellPosition(index) {
@@ -166,6 +189,7 @@ function rollMonopoly() {
     monopolyLog.textContent = `${player.name} 本回合停留监狱。`;
     nextTurn();
     renderMonopoly();
+    syncMonopoly();
     return;
   }
 
@@ -180,6 +204,7 @@ function rollMonopoly() {
     nextTurn();
   }
   renderMonopoly();
+  syncMonopoly();
 }
 
 function resolveCell(player, cell) {

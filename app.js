@@ -3,9 +3,9 @@ const EMPTY = 0;
 const BLACK = 1;
 const WHITE = 2;
 const STORAGE_KEY = "linkplay-gomoku-session-v1";
-const DEFAULT_PEER_HOST = "0.peerjs.com";
-const DEFAULT_PEER_PORT = 443;
-const DEFAULT_PEER_PATH = "/";
+const CLOUD_PEER_HOST = "0.peerjs.com";
+const CLOUD_PEER_PORT = 443;
+const CLOUD_PEER_PATH = "/";
 const DEFAULT_ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
@@ -98,17 +98,30 @@ function buildIceServers(params) {
   return iceServers;
 }
 
+function preferCloudPeer() {
+  const { protocol, hostname } = window.location;
+  return protocol === "file:" || /\.github\.io$/i.test(hostname);
+}
+
 function peerRuntimeConfig() {
   const params = currentParams();
-  return {
-    host: params.get("peerHost") || DEFAULT_PEER_HOST,
-    port: Number(params.get("peerPort") || DEFAULT_PEER_PORT),
-    path: params.get("peerPath") || DEFAULT_PEER_PATH,
-    secure: parseBool(params.get("peerSecure"), true),
-    key: params.get("peerKey") || undefined,
+  const useCloud = preferCloudPeer();
+  const defaultHost = useCloud ? CLOUD_PEER_HOST : window.location.hostname;
+  const defaultPort = useCloud
+    ? CLOUD_PEER_PORT
+    : Number(window.location.port || (window.location.protocol === "https:" ? 443 : 80));
+  const defaultPath = useCloud ? CLOUD_PEER_PATH : "/peerjs";
+  const options = {
+    host: params.get("peerHost") || defaultHost,
+    port: Number(params.get("peerPort") || defaultPort),
+    path: params.get("peerPath") || defaultPath,
+    secure: parseBool(params.get("peerSecure"), useCloud ? true : window.location.protocol === "https:"),
     config: { iceServers: buildIceServers(params) },
     debug: 1,
   };
+  const key = params.get("peerKey");
+  if (key) options.key = key;
+  return options;
 }
 
 function applyPeerConfigToUrl(url) {
@@ -533,10 +546,10 @@ function ensurePeer(onReady, requestedId = null) {
     if (error && error.type === "unavailable-id") {
       state.message = "这个房间码正在被占用，请稍后刷新或重新开房";
     } else {
-      const usingCloud = options.host === DEFAULT_PEER_HOST;
+      const usingCloud = options.host === CLOUD_PEER_HOST;
       state.message = usingCloud
         ? "公共信令服务暂不可用，或当前网络无法连接 PeerJS Cloud。跨设备跨地区联机建议改用自建 PeerServer，并把 peerHost/peerPort/peerPath 参数带进房间链接。"
-        : "当前自定义信令服务不可用，请检查 peerHost/peerPort/peerPath 和 TURN 参数。";
+        : "当前房间的自建信令服务不可用，请确认站点是通过 npm start 启动，或检查 peerHost/peerPort/peerPath 和 TURN 参数。";
     }
     render();
   });

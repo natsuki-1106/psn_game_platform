@@ -7,6 +7,15 @@
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
+    {
+      urls: [
+        "turn:openrelay.metered.ca:80",
+        "turn:openrelay.metered.ca:443",
+        "turn:openrelay.metered.ca:443?transport=tcp",
+      ],
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ];
 
   function makeRoomId(prefix) {
@@ -58,7 +67,10 @@
       port,
       path,
       secure: parseBool(params.get("peerSecure"), useCloud ? true : window.location.protocol === "https:"),
-      config: { iceServers: buildIceServers(params) },
+      config: {
+        iceServers: buildIceServers(params),
+        iceTransportPolicy: parseBool(params.get("forceRelay"), false) ? "relay" : "all",
+      },
       debug: 1,
     };
     const key = params.get("peerKey");
@@ -68,7 +80,7 @@
 
   function applyPeerParams(url) {
     const params = currentParams();
-    ["peerHost", "peerPort", "peerPath", "peerSecure", "peerKey", "turnUrls", "turnUsername", "turnCredential"].forEach((key) => {
+    ["peerHost", "peerPort", "peerPath", "peerSecure", "peerKey", "turnUrls", "turnUsername", "turnCredential", "forceRelay"].forEach((key) => {
       const value = params.get(key);
       if (value) url.searchParams.set(key, value);
     });

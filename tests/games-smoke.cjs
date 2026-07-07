@@ -37,6 +37,16 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.click("#hostBtn");
   await page.click("#addRobotBtn");
   await page.click("#startLandlordBtn");
+  await page.click("#callLandlordBtn");
+  await page.click("#passBidBtn");
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.phase === "playing";
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.seats[state.turn]?.type === "human";
+  });
   await page.click("#hintCardsBtn");
   const landlordState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
   const addRobotDisabled = await page.locator("#addRobotBtn").isDisabled();
@@ -51,6 +61,10 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   if (ludoState.teams.length !== 4 || !ludoState.started || !ludoState.room?.roomId) process.exit(1);
   if (checkersState.players.length !== 6 || !checkersState.started || !checkersState.room?.roomId) process.exit(1);
   if (landlordState.seats.length !== 3 || !landlordState.started || !landlordState.room?.roomId) process.exit(1);
+  if (landlordState.phase !== "playing") process.exit(1);
+  if (landlordState.bottomCards.length !== 3) process.exit(1);
+  if (!landlordState.seats.some((seat) => seat.isLandlord && seat.handCount >= 17)) process.exit(1);
+  if (landlordState.seats.every((seat) => seat.handCount === 18)) process.exit(1);
   if (!landlordState.seats.some((seat) => seat.type === "robot")) process.exit(1);
   if (!landlordState.selected.length) process.exit(1);
   if (!addRobotDisabled) process.exit(1);

@@ -29,3 +29,11 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Kept Ludo gameplay state compatible with the existing simple movement test while using the improved visual route coordinates.
 - Moved Monopoly asset cards below the board and enlarged board cells so flag, country name, and price labels no longer overlap.
 - Verified with `npm test` and screenshots at `outputs/ludo-symmetric-v2.png` and `outputs/monopoly-readable-v2.png`.
+
+## 2026-07-07 Landlord Bidding and Chinese Checkers Board
+
+- Rebuilt `landlord.html` and `landlord.js` as clean UTF-8.
+- Added landlord bidding flow, 3-card bottom stack, landlord assignment, multiplier updates, and doubled multiplier on bomb/rocket.
+- Non-self hands in Landlord now render as side-view card backs and only expose hand counts in text state.
+- Rebuilt `checkers.html` and `checkers.js` as clean UTF-8 and replaced the square board with a star-shaped Chinese Checkers board matching the provided reference style.
+- Verified with `npm test` and screenshots at `outputs/landlord-bidding-hidden-hands.png` and `outputs/checkers-star-board-v3.png`.

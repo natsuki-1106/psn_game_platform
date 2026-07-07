@@ -19,6 +19,7 @@
           </div>
         </div>
         <a class="back-link" href="index.html">返回游戏大厅</a>
+
         <section class="connection-panel" aria-label="房间面板">
           <div class="panel-title">
             <h2>房间</h2>
@@ -41,6 +42,7 @@
             <button id="copyBtn" type="button">复制</button>
           </div>
         </section>
+
         <section class="control-card">
           <h3>开局</h3>
           <div class="inline-actions">
@@ -50,6 +52,17 @@
           <button id="startLandlordBtn" class="primary-btn" type="button">开始游戏</button>
           <p id="landlordRoomLog" class="mini-note">斗地主需要 3 个座位：最多 2 个真人，未满时可补机器人。</p>
         </section>
+
+        <section class="control-card">
+          <h3>叫地主</h3>
+          <strong id="landlordPhase">等待发牌</strong>
+          <div class="inline-actions">
+            <button id="callLandlordBtn" class="primary-btn" type="button">叫地主</button>
+            <button id="passBidBtn" type="button">不叫</button>
+          </div>
+          <p class="mini-note">首个叫地主会把倍率翻到 2，之后抢地主继续翻倍。</p>
+        </section>
+
         <section class="control-card">
           <h3>操作</h3>
           <strong id="landlordTurn">等待开始</strong>
@@ -59,9 +72,10 @@
             <button id="passCardsBtn" type="button">不出</button>
           </div>
           <button id="resetLandlordBtn" type="button">重新发牌</button>
-          <p id="landlordLog" class="mini-note">当前支持单张、对子、三张、顺子、炸弹和王炸。</p>
+          <p id="landlordLog" class="mini-note">支持叫地主、底牌、提示、炸弹/王炸翻倍与手牌隐藏视角。</p>
         </section>
       </aside>
+
       <main class="single-stage">
         <header class="stage-header">
           <div>
@@ -70,13 +84,21 @@
           </div>
           <div class="score-strip">
             <span id="landlordRoomBadge">房间：未进入</span>
+            <span id="landlordMultiplier">倍率：x1</span>
           </div>
         </header>
+
         <section class="stack-board">
           <div class="surface-card last-play">
             <h3>桌面</h3>
             <div id="lastPlay" class="card-hand"></div>
           </div>
+
+          <div class="surface-card">
+            <h3>底牌</h3>
+            <div id="landlordBottom" class="card-hand"></div>
+          </div>
+
           <div id="landlordPlayers" class="stack-board"></div>
         </section>
       </main>

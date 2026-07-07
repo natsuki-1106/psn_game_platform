@@ -15,10 +15,11 @@
           <div class="brand-mark">LP</div>
           <div>
             <h1>跳棋</h1>
-            <p>本地双人 8x8</p>
+            <p>房间制 2-6 人六角星棋盘</p>
           </div>
         </div>
         <a class="back-link" href="index.html">返回游戏大厅</a>
+
         <section class="connection-panel" aria-label="房间面板">
           <div class="panel-title">
             <h2>房间</h2>
@@ -41,6 +42,7 @@
             <button id="copyBtn" type="button">复制</button>
           </div>
         </section>
+
         <section class="control-card">
           <h3>开局</h3>
           <label>
@@ -55,24 +57,27 @@
           </label>
           <button id="startCheckersBtn" class="primary-btn" type="button">开始游戏</button>
         </section>
+
         <section class="control-card">
           <h3>回合</h3>
-          <strong id="checkersTurn">红方</strong>
+          <strong id="checkersTurn">等待开始</strong>
           <button id="resetCheckersBtn" type="button">重新开始</button>
-          <p id="checkersLog" class="mini-note">点击己方棋子，再点击高亮目标格。支持跳吃和升王。</p>
+          <p id="checkersLog" class="mini-note">点击当前玩家棋子，再点击高亮目标点。当前版本为单棋简化演示规则。</p>
         </section>
       </aside>
+
       <main class="single-stage">
         <header class="stage-header">
           <div>
-            <p class="eyebrow">Checkers</p>
+            <p class="eyebrow">Chinese Checkers</p>
             <h2>跳棋</h2>
           </div>
           <div class="score-strip">
             <span id="checkersRoomBadge">房间：未进入</span>
           </div>
         </header>
-        <div id="checkersBoard" class="checkers-board" aria-label="跳棋棋盘"></div>
+
+        <div id="checkersBoard" class="checkers-board chinese-checkers-board" aria-label="跳棋棋盘"></div>
       </main>
     </div>
   </body>

@@ -131,7 +131,7 @@ function peerRuntimeConfig() {
     secure: parseBool(params.get("peerSecure"), useCloud ? true : window.location.protocol === "https:"),
     config: {
       iceServers: buildIceServers(params),
-      iceTransportPolicy: parseBool(params.get("forceRelay"), false) ? "relay" : "all",
+      iceTransportPolicy: parseBool(params.get("forceRelay"), useCloud) ? "relay" : "all",
     },
     debug: 1,
   };
@@ -146,6 +146,9 @@ function applyPeerConfigToUrl(url) {
     const value = params.get(key);
     if (value) url.searchParams.set(key, value);
   });
+  if (preferCloudPeer() && !url.searchParams.has("forceRelay")) {
+    url.searchParams.set("forceRelay", "true");
+  }
 }
 
 function normalizeRoomId(value) {
@@ -659,12 +662,16 @@ function hostRoom() {
   state.players = { black: name, white: "等待加入" };
   resetRoomRecord("当前房间");
   updateShareLink(roomId);
-  state.message = "房间已创建，等待好友加入";
-  setStatus("等待加入", true);
+  state.message = "正在连接房间信令，成功后再分享链接";
+  setStatus("房间上线中");
   resetBoard(false, "黑棋先手");
   saveSession();
 
   ensurePeer((peer) => {
+    state.message = "房间已上线，等待好友加入";
+    setStatus("等待加入", true);
+    render();
+    saveSession();
     bindHostConnections(peer);
   }, roomId);
 }

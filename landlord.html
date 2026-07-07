@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkPlay 斗地主</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="landlord.js"></script>
+  </head>
+  <body>
+    <div class="single-shell">
+      <aside class="single-sidebar">
+        <div class="brand">
+          <div class="brand-mark">LP</div>
+          <div>
+            <h1>斗地主</h1>
+            <p>本地三人练习桌</p>
+          </div>
+        </div>
+        <a class="back-link" href="index.html">返回游戏大厅</a>
+        <section class="control-card">
+          <h3>操作</h3>
+          <strong id="landlordTurn">玩家 A</strong>
+          <div class="inline-actions">
+            <button id="playCardsBtn" class="primary-btn" type="button">出牌</button>
+            <button id="passCardsBtn" type="button">不出</button>
+          </div>
+          <button id="resetLandlordBtn" type="button">重新发牌</button>
+          <p id="landlordLog" class="mini-note">当前支持单张、对子、三张、顺子、炸弹和王炸。</p>
+        </section>
+      </aside>
+      <main class="single-stage">
+        <header class="stage-header">
+          <div>
+            <p class="eyebrow">Landlord</p>
+            <h2>斗地主</h2>
+          </div>
+        </header>
+        <section class="stack-board">
+          <div class="surface-card last-play">
+            <h3>桌面</h3>
+            <div id="lastPlay" class="card-hand"></div>
+          </div>
+          <div id="landlordPlayers" class="stack-board"></div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

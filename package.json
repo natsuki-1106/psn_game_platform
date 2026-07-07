@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "python -m http.server 8080",
-    "test": "node tests/lobby-smoke.cjs && node tests/gomoku-smoke.cjs"
+    "test": "node tests/lobby-smoke.cjs && node tests/gomoku-smoke.cjs && node tests/games-smoke.cjs"
   },
   "keywords": [],
   "author": "",

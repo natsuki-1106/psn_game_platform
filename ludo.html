@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkPlay 飞行棋</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="ludo.js"></script>
+  </head>
+  <body>
+    <div class="single-shell">
+      <aside class="single-sidebar">
+        <div class="brand">
+          <div class="brand-mark">LP</div>
+          <div>
+            <h1>飞行棋</h1>
+            <p>本地双人双机</p>
+          </div>
+        </div>
+        <a class="back-link" href="index.html">返回游戏大厅</a>
+        <section class="control-card">
+          <h3>回合</h3>
+          <strong id="ludoTurn">红方</strong>
+          <button id="rollLudoBtn" class="primary-btn" type="button">掷骰子</button>
+          <button id="resetLudoBtn" type="button">重新开始</button>
+          <p id="ludoLog" class="mini-note">掷到 6 可以让飞机起飞。</p>
+        </section>
+      </aside>
+      <main class="single-stage">
+        <header class="stage-header">
+          <div>
+            <p class="eyebrow">Flight Race</p>
+            <h2>飞行棋</h2>
+          </div>
+        </header>
+        <section class="single-layout">
+          <div id="ludoBoard" class="board-ring" aria-label="飞行棋跑道"></div>
+          <aside class="info-card">
+            <h3>飞机</h3>
+            <div id="ludoPieces" class="chip-list"></div>
+          </aside>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

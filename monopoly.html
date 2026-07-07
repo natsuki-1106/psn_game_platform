@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LinkPlay 大富翁</title>
     <link rel="stylesheet" href="styles.css" />
+    <script defer src="room-common.js"></script>
     <script defer src="monopoly.js"></script>
   </head>
   <body>
@@ -14,10 +15,34 @@
           <div class="brand-mark">LP</div>
           <div>
             <h1>大富翁</h1>
-            <p>本地双人轻量版</p>
+            <p>房间制 2-4 人本地版</p>
           </div>
         </div>
         <a class="back-link" href="index.html">返回游戏大厅</a>
+
+        <section class="connection-panel" aria-label="房间面板">
+          <div class="panel-title">
+            <h2>房间</h2>
+            <span id="roomStatus">未进房</span>
+          </div>
+          <label>
+            昵称
+            <input id="nicknameInput" maxlength="16" autocomplete="off" />
+          </label>
+          <div class="button-grid">
+            <button id="hostBtn" class="primary-btn" type="button">创建房间</button>
+            <button id="joinBtn" type="button">加入房间</button>
+          </div>
+          <label>
+            房间号
+            <input id="roomInput" maxlength="16" autocomplete="off" placeholder="输入房间号" />
+          </label>
+          <div class="share-box">
+            <input id="shareInput" readonly placeholder="创建房间后生成邀请链接" />
+            <button id="copyBtn" type="button">复制</button>
+          </div>
+        </section>
+
         <section class="control-card">
           <h3>开局</h3>
           <label>
@@ -30,25 +55,38 @@
           </label>
           <button id="startMonopolyBtn" class="primary-btn" type="button">开始游戏</button>
         </section>
+
         <section class="control-card">
           <h3>回合</h3>
-          <strong id="monopolyTurn">玩家 A</strong>
+          <strong id="monopolyTurn">等待开始</strong>
           <button id="rollMonopolyBtn" class="primary-btn" type="button">掷骰子</button>
           <button id="resetMonopolyBtn" type="button">重新开始</button>
-          <p id="monopolyLog" class="mini-note">先到达或超过终点者获胜。</p>
+          <p id="monopolyLog" class="mini-note">先创建房间，再由房主选择人数并开始。</p>
         </section>
       </aside>
+
       <main class="single-stage">
         <header class="stage-header">
           <div>
-            <p class="eyebrow">Local Board</p>
+            <p class="eyebrow">Monopoly Board</p>
             <h2>大富翁</h2>
           </div>
+          <div class="score-strip">
+            <span id="monopolyRoomBadge">房间：未进入</span>
+          </div>
         </header>
-        <section class="single-layout">
-          <div id="monopolyBoard" class="board-ring" aria-label="大富翁棋盘"></div>
+
+        <section class="monopoly-layout">
+          <div id="monopolyBoard" class="monopoly-map" aria-label="大富翁环形棋盘">
+            <div class="monopoly-center">
+              <p class="eyebrow">Bank</p>
+              <h3 id="monopolyCenterTitle">等待开局</h3>
+              <p id="monopolyCenterText">四边环形地图，包含地块、车站、机会、税务和监狱。</p>
+              <div id="monopolyDice" class="monopoly-dice">-</div>
+            </div>
+          </div>
           <aside class="info-card">
-            <h3>资产</h3>
+            <h3>资产与地块</h3>
             <div id="monopolyStats" class="stat-grid"></div>
           </aside>
         </section>

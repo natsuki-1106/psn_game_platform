@@ -760,6 +760,199 @@ canvas {
   background: var(--panel);
 }
 
+.monopoly-layout {
+  display: grid;
+  grid-template-columns: minmax(680px, 1fr) 300px;
+  gap: 22px;
+  align-items: start;
+}
+
+.monopoly-map {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(11, minmax(54px, 1fr));
+  grid-template-rows: repeat(11, minmax(54px, 1fr));
+  gap: 4px;
+  width: min(100%, 860px);
+  aspect-ratio: 1;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #dfe8f0;
+  box-shadow: var(--shadow);
+}
+
+.monopoly-center {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  grid-column: 3 / 10;
+  grid-row: 3 / 10;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff, #edf3f9);
+  text-align: center;
+}
+
+.monopoly-center h3,
+.monopoly-center p {
+  margin: 0;
+}
+
+.monopoly-dice {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 16px;
+  background: #fff4d6;
+  color: #8f6510;
+  font-size: 34px;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(23, 33, 43, 0.12);
+}
+
+.monopoly-cell {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  gap: 4px;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px;
+  border: 1px solid rgba(23, 33, 43, 0.16);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  overflow: hidden;
+}
+
+.monopoly-cell strong {
+  font-size: clamp(10px, 1vw, 13px);
+  line-height: 1.2;
+}
+
+.monopoly-cell small,
+.cell-index {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.monopoly-cell.corner {
+  background: #edf8f4;
+}
+
+.monopoly-cell.chance {
+  background: #e7f0ff;
+}
+
+.monopoly-cell.tax {
+  background: #fde6e6;
+}
+
+.monopoly-cell.station,
+.monopoly-cell.utility {
+  background: #fff4d6;
+}
+
+.monopoly-cell.teal {
+  border-top: 6px solid #0c7c59;
+}
+
+.monopoly-cell.pink {
+  border-top: 6px solid #d45d9f;
+}
+
+.monopoly-cell.blue {
+  border-top: 6px solid #336fd6;
+}
+
+.monopoly-cell.orange {
+  border-top: 6px solid #d8762f;
+}
+
+.monopoly-cell.green {
+  border-top: 6px solid #2f9d64;
+}
+
+.monopoly-cell.gold {
+  border-top: 6px solid #c7951d;
+}
+
+.monopoly-cell.red {
+  border-top: 6px solid #d63e47;
+}
+
+.monopoly-cell.black {
+  border-top: 6px solid #17212b;
+}
+
+.owner-mark {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.owner-mark.red {
+  background: #d63e47;
+}
+
+.owner-mark.blue {
+  background: #336fd6;
+}
+
+.owner-mark.green {
+  background: #2f9d64;
+}
+
+.owner-mark.gold {
+  background: #8f6510;
+}
+
+.monopoly-cell .piece-row {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  left: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.monopoly-cell .piece-dot {
+  min-width: 18px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 10px;
+}
+
+.asset-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
+.asset-card small,
+.asset-card span:last-child {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .track-cell {
   display: grid;
   gap: 6px;
@@ -974,6 +1167,15 @@ canvas {
 
   .single-layout {
     grid-template-columns: 1fr;
+  }
+
+  .monopoly-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .monopoly-map {
+    grid-template-columns: repeat(11, minmax(36px, 1fr));
+    grid-template-rows: repeat(11, minmax(36px, 1fr));
   }
 
   .sidebar {

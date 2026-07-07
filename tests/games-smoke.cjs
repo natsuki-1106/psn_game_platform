@@ -16,6 +16,7 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   page.on("pageerror", (err) => errors.push(err.message));
 
   await page.goto(`${baseUrl}/monopoly.html`, { waitUntil: "networkidle" });
+  await page.click("#hostBtn");
   await page.selectOption("#monopolyPlayerCount", "4");
   await page.click("#startMonopolyBtn");
   const monopolyState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
@@ -42,7 +43,7 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   console.log(JSON.stringify({ monopolyState, ludoState, checkersState, landlordState, addRobotDisabled, errors }, null, 2));
 
   if (errors.length) process.exit(1);
-  if (monopolyState.players.length !== 4 || !monopolyState.started) process.exit(1);
+  if (monopolyState.players.length !== 4 || !monopolyState.started || !monopolyState.room?.roomId) process.exit(1);
   if (ludoState.teams.length !== 4 || !ludoState.started) process.exit(1);
   if (checkersState.players.length !== 6 || !checkersState.started) process.exit(1);
   if (landlordState.seats.length !== 3 || !landlordState.started) process.exit(1);

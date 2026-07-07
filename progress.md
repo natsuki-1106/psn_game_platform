@@ -60,3 +60,10 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Upgraded `room-common.js` from local-only room badges to a reusable PeerJS room transport layer.
 - Connected Ludo, Monopoly, Chinese Checkers, and Landlord room panels to real room state sync, with host-authoritative state broadcast after game actions.
 - Landlord remote sync now treats host as seat A and guest as seat B so each human player only sees their own hand while still seeing the shared desk state.
+
+## 2026-07-07 Gomoku Supabase Realtime Migration
+
+- Added `config.js` and vendored `vendor/supabase.js` for browser-side Supabase configuration on a static GitHub Pages deployment.
+- Replaced Gomoku main page logic with `gomoku-app.js`, a clean UTF-8 implementation that keeps the existing board, replay, and record UI but switches cross-device room sync to Supabase Realtime channels.
+- When `config.js` is not configured, Gomoku now fails loudly with a clear Supabase setup message instead of pretending PeerJS cross-device rooms are stable.
+- Updated `tests/gomoku-smoke.cjs` so local gameplay, replay, and result-panel verification still run without requiring Supabase credentials.

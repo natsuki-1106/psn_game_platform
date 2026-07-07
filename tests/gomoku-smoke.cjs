@@ -22,7 +22,11 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.reload({ waitUntil: "networkidle" });
   const restoredState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 
-  await page.click("#localBtn");
+  if (!initialState.supabaseConfigured) {
+    await page.click("#localBtn");
+  } else {
+    await page.click("#localBtn");
+  }
 
   const box = await page.locator("#boardCanvas").boundingBox();
   const cellPoint = (row, col) => {
@@ -88,8 +92,12 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   console.log(JSON.stringify({ initialState, restoredState, status, modalText, wonState, replayState, secondWonState, lobbyTitle, errors }, null, 2));
 
   if (errors.length) process.exit(1);
-  if (!initialState.roomId || initialState.mode !== "online") process.exit(1);
-  if (restoredState.roomId !== initialState.roomId || restoredState.mode !== "online") process.exit(1);
+  if (!initialState.supabaseConfigured) {
+    if (!initialState.message.includes("Supabase")) process.exit(1);
+  } else {
+    if (!initialState.roomId || initialState.mode !== "online") process.exit(1);
+    if (restoredState.roomId !== initialState.roomId || restoredState.mode !== "online") process.exit(1);
+  }
   if (wonState.winner !== "黑棋") process.exit(1);
   if (!wonState.modalOpen) process.exit(1);
   if (wonState.record.total !== 1 || wonState.record.black !== 1 || wonState.record.white !== 0) process.exit(1);

@@ -20,6 +20,8 @@ const DEFAULT_ICE_SERVERS = [
     credential: "openrelayproject",
   },
 ];
+const CONNECT_TIMEOUT_MS = 12000;
+const MAX_CONNECT_ATTEMPTS = 3;
 
 const canvas = document.querySelector("#boardCanvas");
 const ctx = canvas.getContext("2d");
@@ -69,6 +71,8 @@ const state = {
   gameCounted: false,
   suppressCloseNotice: false,
   restoring: false,
+  connectAttempt: 0,
+  connectTimer: null,
 };
 
 function makeRoomId() {
@@ -517,8 +521,17 @@ function receive(payload) {
 }
 
 function connectEvents(conn) {
+  if (state.connectTimer) {
+    clearTimeout(state.connectTimer);
+    state.connectTimer = null;
+  }
   state.conn = conn;
   conn.on("open", () => {
+    if (state.connectTimer) {
+      clearTimeout(state.connectTimer);
+      state.connectTimer = null;
+    }
+    state.connectAttempt = 0;
     state.mode = "online";
     setStatus("已连接", true);
     if (state.role === "white") conn.send({ type: "hello", name: ownName() });
@@ -527,6 +540,10 @@ function connectEvents(conn) {
   });
   conn.on("data", receive);
   conn.on("close", () => {
+    if (state.connectTimer) {
+      clearTimeout(state.connectTimer);
+      state.connectTimer = null;
+    }
     if (state.suppressCloseNotice) return;
     resetRoomRecord("玩家离开后已重置");
     resetBoard(false, "连接已断开，当前房间战绩已清零");
@@ -535,7 +552,15 @@ function connectEvents(conn) {
     render();
     saveSession();
   });
-  conn.on("error", () => setStatus("连接错误"));
+  conn.on("error", () => {
+    if (state.connectTimer) {
+      clearTimeout(state.connectTimer);
+      state.connectTimer = null;
+    }
+    setStatus("连接错误");
+    state.message = "连接房主失败。请确认房主页面保持打开，并让房主重新创建房间后发送完整邀请链接。";
+    render();
+  });
 }
 
 function ensurePeer(onReady, requestedId = null) {
@@ -593,6 +618,37 @@ function bindHostConnections(peer) {
   });
 }
 
+function clearConnectTimer() {
+  if (state.connectTimer) {
+    clearTimeout(state.connectTimer);
+    state.connectTimer = null;
+  }
+}
+
+function beginJoinTimeout(roomId) {
+  clearConnectTimer();
+  state.connectTimer = setTimeout(() => {
+    const stillConnecting = state.conn && !state.conn.open;
+    if (!stillConnecting || state.roomId !== roomId || state.role !== "white") return;
+    if (state.connectAttempt < MAX_CONNECT_ATTEMPTS) {
+      state.connectAttempt += 1;
+      state.message = `连接房主超时，正在重试 (${state.connectAttempt}/${MAX_CONNECT_ATTEMPTS})`;
+      render();
+      joinRoom();
+      return;
+    }
+    if (state.conn) {
+      try {
+        state.conn.close();
+      } catch {}
+    }
+    state.conn = null;
+    setStatus("未连上房主");
+    state.message = "房主当前未成功在线，或跨网络 WebRTC 连接失败。请让房主重新创建房间，并优先使用完整邀请链接；仍不行时在链接后追加 forceRelay=true。";
+    render();
+  }, CONNECT_TIMEOUT_MS);
+}
+
 function hostRoom() {
   const name = ownName();
   const roomId = makeRoomId();
@@ -638,6 +694,13 @@ function joinRoom() {
   roomInput.value = roomId;
   const name = ownName();
   nicknameInput.value = name;
+  clearConnectTimer();
+  if (state.conn && state.conn.open) {
+    try {
+      state.conn.close();
+    } catch {}
+  }
+  state.conn = null;
   ensurePeer((peer) => {
     state.role = "white";
     state.mode = "online";
@@ -648,6 +711,7 @@ function joinRoom() {
     state.message = "正在加入房间";
     render();
     saveSession();
+    beginJoinTimeout(roomId);
   });
 }
 
@@ -744,6 +808,11 @@ window.render_game_to_text = () =>
     modalOpen: !resultModal.hidden,
     moves: state.moves.map((move) => ({ row: move.row, col: move.col, color: colorName(move.color) })),
     message: state.message,
+    connectionStatus: connectionStatus.textContent,
+    peerId: state.peer?.id || null,
+    peerOpen: Boolean(state.peer && !state.peer.destroyed && state.peer.open),
+    connOpen: Boolean(state.conn?.open),
+    connectAttempt: state.connectAttempt,
   });
 
 window.advanceTime = () => {

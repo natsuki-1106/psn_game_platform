@@ -8,11 +8,28 @@ const ludoTurn = document.querySelector("#ludoTurn");
 const ludoPieces = document.querySelector("#ludoPieces");
 const ludoLog = document.querySelector("#ludoLog");
 const ludoPlayerCount = document.querySelector("#ludoPlayerCount");
+const ludoRoomBadge = document.querySelector("#ludoRoomBadge");
+let ludoRoomApi = null;
 document.querySelector("#startLudoBtn").addEventListener("click", startLudo);
 document.querySelector("#rollLudoBtn").addEventListener("click", rollLudo);
 document.querySelector("#resetLudoBtn").addEventListener("click", startLudo);
 
+ludoRoomApi = window.initRoomPanel({
+  gameKey: "ludo",
+  prefix: "FQ",
+  onRoomChange(room) {
+    ludoState.room = room;
+    ludoRoomBadge.textContent = room.roomId ? `房间：${room.roomId}` : "房间：未进入";
+  },
+});
+
 function startLudo() {
+  const blocked = ludoRoomApi.requireHost();
+  if (blocked) {
+    ludoLog.textContent = blocked;
+    renderLudo();
+    return;
+  }
   const count = Number(ludoPlayerCount.value);
   ludoState.teams = Array.from({ length: count }, (_, index) => ({
     name: teamNames[index],
@@ -104,4 +121,4 @@ function endLudoTurn() {
 
 window.render_game_to_text = () => JSON.stringify(ludoState);
 window.advanceTime = () => renderLudo();
-startLudo();
+renderLudo();

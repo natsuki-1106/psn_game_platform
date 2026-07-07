@@ -2,6 +2,8 @@ const checkersBoard = document.querySelector("#checkersBoard");
 const checkersTurn = document.querySelector("#checkersTurn");
 const checkersLog = document.querySelector("#checkersLog");
 const checkersPlayerCount = document.querySelector("#checkersPlayerCount");
+const checkersRoomBadge = document.querySelector("#checkersRoomBadge");
+let checkersRoomApi = null;
 document.querySelector("#startCheckersBtn").addEventListener("click", startCheckers);
 document.querySelector("#resetCheckersBtn").addEventListener("click", startCheckers);
 
@@ -24,7 +26,22 @@ const checkersState = {
   over: false,
 };
 
+checkersRoomApi = window.initRoomPanel({
+  gameKey: "checkers",
+  prefix: "TQ",
+  onRoomChange(room) {
+    checkersState.room = room;
+    checkersRoomBadge.textContent = room.roomId ? `房间：${room.roomId}` : "房间：未进入";
+  },
+});
+
 function startCheckers() {
+  const blocked = checkersRoomApi.requireHost();
+  if (blocked) {
+    checkersLog.textContent = blocked;
+    renderCheckers();
+    return;
+  }
   const count = Number(checkersPlayerCount.value);
   checkersState.players = Array.from({ length: count }, (_, index) => ({
     name: `玩家 ${String.fromCharCode(65 + index)}`,
@@ -126,4 +143,4 @@ function renderCheckers() {
 
 window.render_game_to_text = () => JSON.stringify(checkersState);
 window.advanceTime = () => renderCheckers();
-startCheckers();
+renderCheckers();

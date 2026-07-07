@@ -12,21 +12,34 @@ const landlordState = {
   passes: 0,
   started: false,
   over: false,
+  room: null,
 };
 
 const landlordTurn = document.querySelector("#landlordTurn");
 const landlordPlayers = document.querySelector("#landlordPlayers");
 const landlordLog = document.querySelector("#landlordLog");
 const landlordRoomLog = document.querySelector("#landlordRoomLog");
+const landlordRoomBadge = document.querySelector("#landlordRoomBadge");
 const lastPlay = document.querySelector("#lastPlay");
 const addHumanBtn = document.querySelector("#addHumanBtn");
 const addRobotBtn = document.querySelector("#addRobotBtn");
+const hintCardsBtn = document.querySelector("#hintCardsBtn");
 document.querySelector("#playCardsBtn").addEventListener("click", playSelectedCards);
 document.querySelector("#passCardsBtn").addEventListener("click", passCards);
 document.querySelector("#resetLandlordBtn").addEventListener("click", resetRoom);
 document.querySelector("#startLandlordBtn").addEventListener("click", startLandlord);
 addHumanBtn.addEventListener("click", addHuman);
 addRobotBtn.addEventListener("click", addRobot);
+hintCardsBtn.addEventListener("click", hintCards);
+
+const landlordRoomApi = window.initRoomPanel({
+  gameKey: "landlord",
+  prefix: "DD",
+  onRoomChange(room) {
+    landlordState.room = room;
+    landlordRoomBadge.textContent = room.roomId ? `房间：${room.roomId}` : "房间：未进入";
+  },
+});
 
 function addHuman() {
   const humanCount = landlordState.seats.filter((seat) => seat.type === "human").length;
@@ -64,7 +77,12 @@ function buildDeck() {
 }
 
 function startLandlord() {
-  if (landlordState.seats.length < 2) return;
+  const blocked = landlordRoomApi.requireHost();
+  if (blocked) {
+    landlordLog.textContent = blocked;
+    renderLandlord();
+    return;
+  }
   while (landlordState.seats.length < 3) addRobot();
   const deck = buildDeck();
   landlordState.seats.forEach((seat) => {
@@ -98,16 +116,85 @@ function classify(cards) {
   if (cards.length === 3 && groups[0] === 3) return { type: "triple", power: values[0], count: 3 };
   if (cards.length === 4 && groups[0] === 4) return { type: "bomb", power: values[0], count: 4 };
   if (cards.length >= 5 && groups.every((count) => count === 1) && values.every((value) => value < rankValue["2"])) {
-    if (values.every((value, index) => index === 0 || value === values[index - 1] + 1)) return { type: "straight", power: values.at(-1), count: cards.length };
+    if (values.every((value, index) => index === 0 || value === values[index - 1] + 1)) {
+      return { type: "straight", power: values.at(-1), count: cards.length };
+    }
   }
   return null;
 }
 
 function beats(play, last) {
+  if (!play) return false;
   if (!last) return true;
   if (play.type === "rocket") return true;
   if (play.type === "bomb" && last.type !== "bomb" && last.type !== "rocket") return true;
   return play.type === last.type && play.count === last.count && play.power > last.power;
+}
+
+function findHint(hand, lastPlay) {
+  const all = buildHintCandidates(hand).filter((candidate) => beats(candidate.play, lastPlay));
+  all.sort((a, b) => {
+    if (a.play.type === "rocket" && b.play.type !== "rocket") return 1;
+    if (a.play.type !== "rocket" && b.play.type === "rocket") return -1;
+    if (a.play.type === "bomb" && b.play.type !== "bomb") return 1;
+    if (a.play.type !== "bomb" && b.play.type === "bomb") return -1;
+    if (a.play.count !== b.play.count) return a.play.count - b.play.count;
+    return a.play.power - b.play.power;
+  });
+  return all[0]?.indices || [];
+}
+
+function buildHintCandidates(hand) {
+  const byRank = new Map();
+  hand.forEach((card, index) => {
+    if (!byRank.has(card.rank)) byRank.set(card.rank, []);
+    byRank.get(card.rank).push(index);
+  });
+  const candidates = [];
+
+  for (const indices of byRank.values()) {
+    addCandidate(candidates, hand, indices.slice(0, 1));
+    if (indices.length >= 2) addCandidate(candidates, hand, indices.slice(0, 2));
+    if (indices.length >= 3) addCandidate(candidates, hand, indices.slice(0, 3));
+    if (indices.length >= 4) addCandidate(candidates, hand, indices.slice(0, 4));
+  }
+
+  const jokerSmall = hand.findIndex((card) => card.rank === "小王");
+  const jokerBig = hand.findIndex((card) => card.rank === "大王");
+  if (jokerSmall >= 0 && jokerBig >= 0) addCandidate(candidates, hand, [jokerSmall, jokerBig]);
+
+  const uniqueRanks = ranks
+    .slice(0, 12)
+    .filter((rank) => byRank.has(rank))
+    .map((rank) => ({ rank, index: byRank.get(rank)[0], value: rankValue[rank] }));
+  for (let start = 0; start < uniqueRanks.length; start += 1) {
+    const run = [uniqueRanks[start]];
+    for (let next = start + 1; next < uniqueRanks.length; next += 1) {
+      if (uniqueRanks[next].value !== run.at(-1).value + 1) break;
+      run.push(uniqueRanks[next]);
+      if (run.length >= 5) addCandidate(candidates, hand, run.map((item) => item.index));
+    }
+  }
+
+  return candidates;
+}
+
+function addCandidate(candidates, hand, indices) {
+  const play = classify(indices.map((index) => hand[index]));
+  if (play) candidates.push({ play, indices });
+}
+
+function hintCards() {
+  if (!landlordState.started || landlordState.over) return;
+  const player = landlordState.seats[landlordState.turn];
+  if (player.type !== "human") {
+    landlordLog.textContent = "当前是机器人回合。";
+    return;
+  }
+  const hint = findHint(player.hand, landlordState.lastPlay);
+  landlordState.selected = hint;
+  landlordLog.textContent = hint.length ? `已为 ${player.name} 选中一组可出的牌。` : "没有可出的牌，请选择不出。";
+  renderLandlord();
 }
 
 function playSelectedCards() {
@@ -148,8 +235,8 @@ function submitPlay(cards) {
 
 function robotPlay() {
   const robot = landlordState.seats[landlordState.turn];
-  const candidate = robot.hand.map((card) => [card]).find((cards) => beats(classify(cards), landlordState.lastPlay));
-  if (candidate) submitPlay(candidate);
+  const hint = findHint(robot.hand, landlordState.lastPlay);
+  if (hint.length) submitPlay(hint.map((index) => robot.hand[index]));
   else passCards();
 }
 

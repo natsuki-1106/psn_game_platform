@@ -1090,6 +1090,13 @@ canvas {
   gap: 8px;
 }
 
+.player-strip .card-hand {
+  align-items: flex-end;
+  gap: 0;
+  padding: 10px 0 4px;
+  overflow-x: auto;
+}
+
 .playing-card {
   display: grid;
   place-items: center;
@@ -1100,12 +1107,27 @@ canvas {
   background: #fff;
   font-weight: 900;
   cursor: pointer;
+  box-shadow: 0 8px 18px rgba(23, 33, 43, 0.08);
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.player-strip .playing-card {
+  flex: 0 0 54px;
+  margin-right: -14px;
+}
+
+.player-strip .playing-card:hover:not(:disabled) {
+  transform: translateY(-6px);
 }
 
 .playing-card.selected {
   border-color: var(--accent);
   background: #edf8f4;
-  transform: translateY(-4px);
+  transform: translateY(-14px);
+  z-index: 2;
 }
 
 .playing-card.red {

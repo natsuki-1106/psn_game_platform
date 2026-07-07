@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LinkPlay 斗地主</title>
     <link rel="stylesheet" href="styles.css" />
+    <script defer src="room-common.js"></script>
     <script defer src="landlord.js"></script>
   </head>
   <body>
@@ -14,10 +15,32 @@
           <div class="brand-mark">LP</div>
           <div>
             <h1>斗地主</h1>
-            <p>本地三人练习桌</p>
+            <p>房间制二人加机器人</p>
           </div>
         </div>
         <a class="back-link" href="index.html">返回游戏大厅</a>
+        <section class="connection-panel" aria-label="房间面板">
+          <div class="panel-title">
+            <h2>房间</h2>
+            <span id="roomStatus">未进房</span>
+          </div>
+          <label>
+            昵称
+            <input id="nicknameInput" maxlength="16" autocomplete="off" />
+          </label>
+          <div class="button-grid">
+            <button id="hostBtn" class="primary-btn" type="button">创建房间</button>
+            <button id="joinBtn" type="button">加入房间</button>
+          </div>
+          <label>
+            房间号
+            <input id="roomInput" maxlength="16" autocomplete="off" placeholder="输入房间号" />
+          </label>
+          <div class="share-box">
+            <input id="shareInput" readonly placeholder="创建房间后生成邀请链接" />
+            <button id="copyBtn" type="button">复制</button>
+          </div>
+        </section>
         <section class="control-card">
           <h3>开局</h3>
           <div class="inline-actions">
@@ -29,8 +52,9 @@
         </section>
         <section class="control-card">
           <h3>操作</h3>
-          <strong id="landlordTurn">玩家 A</strong>
+          <strong id="landlordTurn">等待开始</strong>
           <div class="inline-actions">
+            <button id="hintCardsBtn" type="button">提示</button>
             <button id="playCardsBtn" class="primary-btn" type="button">出牌</button>
             <button id="passCardsBtn" type="button">不出</button>
           </div>
@@ -43,6 +67,9 @@
           <div>
             <p class="eyebrow">Landlord</p>
             <h2>斗地主</h2>
+          </div>
+          <div class="score-strip">
+            <span id="landlordRoomBadge">房间：未进入</span>
           </div>
         </header>
         <section class="stack-board">

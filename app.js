@@ -132,6 +132,14 @@ function applyPeerConfigToUrl(url) {
   });
 }
 
+function normalizeRoomId(value) {
+  const roomId = (value || "").trim();
+  if (!roomId) return "";
+  if (/^ip-/i.test(roomId)) return `lp-${roomId.slice(3)}`.toLowerCase();
+  if (/^lp-/i.test(roomId)) return roomId.toLowerCase();
+  return roomId;
+}
+
 function colorName(color) {
   return color === BLACK ? "黑棋" : "白棋";
 }
@@ -609,12 +617,13 @@ function resumeHostedRoom(roomId) {
 }
 
 function joinRoom() {
-  const roomId = roomInput.value.trim();
+  const roomId = normalizeRoomId(roomInput.value);
   if (!roomId) {
     state.message = "请输入房间码";
     render();
     return;
   }
+  roomInput.value = roomId;
   const name = ownName();
   nicknameInput.value = name;
   ensurePeer((peer) => {
@@ -733,7 +742,7 @@ function boot() {
   nicknameInput.value = localStorage.getItem("linkplay-name") || randomName();
   nicknameInput.addEventListener("change", () => localStorage.setItem("linkplay-name", nicknameInput.value.trim()));
 
-  const roomFromUrl = new URLSearchParams(window.location.search).get("room");
+  const roomFromUrl = normalizeRoomId(new URLSearchParams(window.location.search).get("room"));
   if (roomFromUrl) roomInput.value = roomFromUrl;
 
   const saved = loadSession();
@@ -755,6 +764,13 @@ function boot() {
     }
 
     if (state.winner) showResultModal();
+  } else if (roomFromUrl) {
+    clearSession();
+    roomInput.value = roomFromUrl;
+    state.message = "正在通过房间链接加入";
+    render();
+    joinRoom();
+    return;
   }
 
   render();

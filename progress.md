@@ -8,3 +8,9 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Updated Landlord robot play to reuse the same hint finder.
 - Updated smoke tests so room creation is exercised before starting Ludo, Checkers, and Landlord.
 - TODO: Ludo and Checkers are functional but could still be visually upgraded further if the next request focuses on those boards.
+
+## 2026-07-07 Landlord Card Face Polish
+
+- Changed Landlord card rendering so internal IDs like `9C` are no longer shown on the card face.
+- Added poker-style corner rank/suit labels, center suit pips, red/black suit coloring, and Joker cards.
+- Verified with `npm test` and a Playwright screenshot at `outputs/landlord-cards.png`.

@@ -265,7 +265,21 @@ function nextLandlordTurn() {
 }
 
 function cardText(card) {
-  return `${card.rank}${card.suit}`;
+  if (!card.suit) return "Joker";
+  return `${card.rank}${suitLabel(card.suit)}`;
+}
+
+function suitLabel(suit) {
+  return {
+    S: "\u2660",
+    H: "\u2665",
+    C: "\u2663",
+    D: "\u2666",
+  }[suit] || suit;
+}
+
+function jokerTone(card) {
+  return rankValue[card.rank] === ranks.length - 1 ? "red" : "black";
 }
 
 function renderLandlord() {
@@ -305,9 +319,17 @@ function renderLandlord() {
 function cardButton(card, enabled) {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = `playing-card ${card.suit === "H" || card.suit === "D" ? "red" : "black"}`;
+  const color = card.suit ? (card.suit === "H" || card.suit === "D" ? "red" : "black") : jokerTone(card);
+  btn.className = `playing-card ${color} ${card.suit ? "" : "joker-card"}`;
   btn.disabled = !enabled;
-  btn.textContent = cardText(card);
+  const rank = card.suit ? card.rank : "Joker";
+  const suit = card.suit ? suitLabel(card.suit) : "\u2605";
+  btn.setAttribute("aria-label", cardText(card));
+  btn.innerHTML = `
+    <span class="card-corner top"><b>${rank}</b><i>${suit}</i></span>
+    <span class="card-pip">${suit}</span>
+    <span class="card-corner bottom"><b>${rank}</b><i>${suit}</i></span>
+  `;
   return btn;
 }
 

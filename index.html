@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkPlay 小游戏大厅</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="lobby-shell">
+      <header class="lobby-header">
+        <div class="brand">
+          <div class="brand-mark">LP</div>
+          <div>
+            <h1>LinkPlay</h1>
+            <p>选择一个游戏，进入专属房间页开始对战</p>
+          </div>
+        </div>
+      </header>
+
+      <section class="lobby-grid" aria-label="游戏大厅">
+        <a class="lobby-game available" href="gomoku.html">
+          <div class="lobby-game-art gomoku-art">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="lobby-game-body">
+            <p class="eyebrow">2 人对战</p>
+            <h2>五子棋</h2>
+            <p>进入五子棋专属页面后，可以创建房间、加入好友房间或本地双人对战。</p>
+          </div>
+          <strong>进入游戏</strong>
+        </a>
+
+        <article class="lobby-game locked">
+          <div class="lobby-game-art placeholder-art">+</div>
+          <div class="lobby-game-body">
+            <p class="eyebrow">Coming Soon</p>
+            <h2>更多小游戏</h2>
+            <p>平台预留扩展位，后续可以继续加入你自己的多人小游戏。</p>
+          </div>
+          <strong>未开放</strong>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

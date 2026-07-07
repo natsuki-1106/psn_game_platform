@@ -43,3 +43,11 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Changed Gomoku result UI from a centered blocking modal to a bottom-right floating panel so the winning five-stone line remains visible on the board.
 - Kept the same `resultModal`, replay, and exit controls so the existing interaction and tests remain intact.
 - Verified with `node tests/gomoku-smoke.cjs` and the updated `outputs/gomoku-modal.png`.
+
+## 2026-07-07 Gomoku Remote Signaling Fix
+
+- Investigated the provided screenshot showing Gomoku status `信令不可用`; the root issue is PeerJS public signaling not being reachable from that network/region, so remote peers cannot reliably connect or sync moves.
+- Added explicit PeerJS Cloud connection options, default STUN servers, and URL-configurable custom PeerServer/TURN parameters.
+- Room share links now preserve `peerHost`, `peerPort`, `peerPath`, `peerSecure`, `peerKey`, `turnUrls`, `turnUsername`, and `turnCredential` so custom networking config survives remote joins.
+- Verified Gomoku with a two-browser remote-style sync test: host created a room, guest joined by room link, black move synced to guest, and white move synced back to host.
+- Verified with `node tests/gomoku-smoke.cjs` and full `npm test`.

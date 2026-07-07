@@ -3,6 +3,14 @@ const EMPTY = 0;
 const BLACK = 1;
 const WHITE = 2;
 const STORAGE_KEY = "linkplay-gomoku-session-v1";
+const DEFAULT_PEER_HOST = "0.peerjs.com";
+const DEFAULT_PEER_PORT = 443;
+const DEFAULT_PEER_PATH = "/";
+const DEFAULT_ICE_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+];
 
 const canvas = document.querySelector("#boardCanvas");
 const ctx = canvas.getContext("2d");
@@ -65,6 +73,50 @@ function randomName() {
 
 function ownName() {
   return nicknameInput.value.trim() || randomName();
+}
+
+function currentParams() {
+  return new URLSearchParams(window.location.search);
+}
+
+function parseBool(value, fallback) {
+  if (value == null) return fallback;
+  return value !== "false" && value !== "0";
+}
+
+function buildIceServers(params) {
+  const iceServers = [...DEFAULT_ICE_SERVERS];
+  const turnUrls = (params.get("turnUrls") || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const turnUsername = params.get("turnUsername") || "";
+  const turnCredential = params.get("turnCredential") || "";
+  if (turnUrls.length && turnUsername && turnCredential) {
+    iceServers.push({ urls: turnUrls, username: turnUsername, credential: turnCredential });
+  }
+  return iceServers;
+}
+
+function peerRuntimeConfig() {
+  const params = currentParams();
+  return {
+    host: params.get("peerHost") || DEFAULT_PEER_HOST,
+    port: Number(params.get("peerPort") || DEFAULT_PEER_PORT),
+    path: params.get("peerPath") || DEFAULT_PEER_PATH,
+    secure: parseBool(params.get("peerSecure"), true),
+    key: params.get("peerKey") || undefined,
+    config: { iceServers: buildIceServers(params) },
+    debug: 1,
+  };
+}
+
+function applyPeerConfigToUrl(url) {
+  const params = currentParams();
+  ["peerHost", "peerPort", "peerPath", "peerSecure", "peerKey", "turnUrls", "turnUsername", "turnCredential"].forEach((key) => {
+    const value = params.get(key);
+    if (value) url.searchParams.set(key, value);
+  });
 }
 
 function colorName(color) {
@@ -471,16 +523,21 @@ function ensurePeer(onReady, requestedId = null) {
     return;
   }
 
-  const peer = requestedId ? new Peer(requestedId) : new Peer();
+  const options = peerRuntimeConfig();
+  const peer = requestedId ? new Peer(requestedId, options) : new Peer(undefined, options);
   state.peer = peer;
   setStatus("连接中");
   peer.on("open", () => onReady(peer));
   peer.on("error", (error) => {
     setStatus("信令不可用");
-    state.message =
-      error && error.type === "unavailable-id"
-        ? "这个房间码正在被占用，请稍后刷新或重新开房"
-        : "公共信令服务暂不可用，可使用本地对战";
+    if (error && error.type === "unavailable-id") {
+      state.message = "这个房间码正在被占用，请稍后刷新或重新开房";
+    } else {
+      const usingCloud = options.host === DEFAULT_PEER_HOST;
+      state.message = usingCloud
+        ? "公共信令服务暂不可用，或当前网络无法连接 PeerJS Cloud。跨设备跨地区联机建议改用自建 PeerServer，并把 peerHost/peerPort/peerPath 参数带进房间链接。"
+        : "当前自定义信令服务不可用，请检查 peerHost/peerPort/peerPath 和 TURN 参数。";
+    }
     render();
   });
 }
@@ -489,6 +546,7 @@ function updateShareLink(roomId) {
   roomInput.value = roomId;
   const url = new URL("gomoku.html", window.location.href);
   url.searchParams.set("room", roomId);
+  applyPeerConfigToUrl(url);
   shareInput.value = url.toString();
 }
 

@@ -13,22 +13,33 @@ const monopolyCells = [
   { name: "终点", type: "start" },
 ];
 
-const monopolyState = {
-  players: [
-    { name: "玩家 A", pos: 0, money: 1000, color: "red" },
-    { name: "玩家 B", pos: 0, money: 1000, color: "blue" },
-  ],
-  turn: 0,
-  dice: 0,
-  over: false,
-};
+const colors = ["red", "blue", "green", "gold", "purple", "orange"];
+const monopolyState = { players: [], turn: 0, dice: 0, started: false, over: false };
 
 const monopolyBoard = document.querySelector("#monopolyBoard");
 const monopolyTurn = document.querySelector("#monopolyTurn");
 const monopolyStats = document.querySelector("#monopolyStats");
 const monopolyLog = document.querySelector("#monopolyLog");
+const monopolyPlayerCount = document.querySelector("#monopolyPlayerCount");
+document.querySelector("#startMonopolyBtn").addEventListener("click", startMonopoly);
 document.querySelector("#rollMonopolyBtn").addEventListener("click", rollMonopoly);
-document.querySelector("#resetMonopolyBtn").addEventListener("click", resetMonopoly);
+document.querySelector("#resetMonopolyBtn").addEventListener("click", startMonopoly);
+
+function startMonopoly() {
+  const count = Number(monopolyPlayerCount.value);
+  monopolyState.players = Array.from({ length: count }, (_, index) => ({
+    name: `玩家 ${String.fromCharCode(65 + index)}`,
+    pos: 0,
+    money: 1000,
+    color: colors[index],
+  }));
+  monopolyState.turn = 0;
+  monopolyState.dice = 0;
+  monopolyState.started = true;
+  monopolyState.over = false;
+  monopolyLog.textContent = `${count} 人游戏开始，先到终点者获胜。`;
+  renderMonopoly();
+}
 
 function renderMonopoly() {
   monopolyBoard.innerHTML = "";
@@ -50,7 +61,7 @@ function renderMonopoly() {
     monopolyBoard.appendChild(div);
   });
 
-  monopolyTurn.textContent = monopolyState.over ? "已结束" : monopolyState.players[monopolyState.turn].name;
+  monopolyTurn.textContent = !monopolyState.started ? "等待开始" : monopolyState.over ? "已结束" : monopolyState.players[monopolyState.turn].name;
   monopolyStats.innerHTML = "";
   monopolyState.players.forEach((player) => {
     const stat = document.createElement("span");
@@ -61,7 +72,7 @@ function renderMonopoly() {
 }
 
 function rollMonopoly() {
-  if (monopolyState.over) return;
+  if (!monopolyState.started || monopolyState.over) return;
   const player = monopolyState.players[monopolyState.turn];
   const dice = Math.floor(Math.random() * 6) + 1;
   monopolyState.dice = dice;
@@ -81,21 +92,10 @@ function rollMonopoly() {
   if (cell.type === "jump") player.pos = Math.min(monopolyCells.length - 1, player.pos + cell.value);
 
   monopolyLog.textContent = `${player.name} 掷出 ${dice}，停在 ${cell.name}。`;
-  monopolyState.turn = 1 - monopolyState.turn;
-  renderMonopoly();
-}
-
-function resetMonopoly() {
-  monopolyState.players[0].pos = 0;
-  monopolyState.players[1].pos = 0;
-  monopolyState.players[0].money = 1000;
-  monopolyState.players[1].money = 1000;
-  monopolyState.turn = 0;
-  monopolyState.over = false;
-  monopolyLog.textContent = "先到达或超过终点者获胜。";
+  monopolyState.turn = (monopolyState.turn + 1) % monopolyState.players.length;
   renderMonopoly();
 }
 
 window.render_game_to_text = () => JSON.stringify(monopolyState);
 window.advanceTime = () => renderMonopoly();
-renderMonopoly();
+startMonopoly();

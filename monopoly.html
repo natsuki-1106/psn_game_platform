@@ -19,6 +19,18 @@
         </div>
         <a class="back-link" href="index.html">返回游戏大厅</a>
         <section class="control-card">
+          <h3>开局</h3>
+          <label>
+            人数
+            <select id="monopolyPlayerCount">
+              <option value="2">2 人</option>
+              <option value="3">3 人</option>
+              <option value="4">4 人</option>
+            </select>
+          </label>
+          <button id="startMonopolyBtn" class="primary-btn" type="button">开始游戏</button>
+        </section>
+        <section class="control-card">
           <h3>回合</h3>
           <strong id="monopolyTurn">玩家 A</strong>
           <button id="rollMonopolyBtn" class="primary-btn" type="button">掷骰子</button>

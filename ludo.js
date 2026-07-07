@@ -1,20 +1,31 @@
 const ludoCells = Array.from({ length: 24 }, (_, index) => ({ name: index === 0 ? "机场" : index === 23 ? "终点" : `航道 ${index}` }));
-const ludoState = {
-  teams: [
-    { name: "红方", color: "red", pieces: [-1, -1] },
-    { name: "蓝方", color: "blue", pieces: [-1, -1] },
-  ],
-  turn: 0,
-  dice: 0,
-  over: false,
-};
+const teamColors = ["red", "blue", "green", "gold"];
+const teamNames = ["红方", "蓝方", "绿方", "黄方"];
+const ludoState = { teams: [], turn: 0, dice: 0, started: false, over: false };
 
 const ludoBoard = document.querySelector("#ludoBoard");
 const ludoTurn = document.querySelector("#ludoTurn");
 const ludoPieces = document.querySelector("#ludoPieces");
 const ludoLog = document.querySelector("#ludoLog");
+const ludoPlayerCount = document.querySelector("#ludoPlayerCount");
+document.querySelector("#startLudoBtn").addEventListener("click", startLudo);
 document.querySelector("#rollLudoBtn").addEventListener("click", rollLudo);
-document.querySelector("#resetLudoBtn").addEventListener("click", resetLudo);
+document.querySelector("#resetLudoBtn").addEventListener("click", startLudo);
+
+function startLudo() {
+  const count = Number(ludoPlayerCount.value);
+  ludoState.teams = Array.from({ length: count }, (_, index) => ({
+    name: teamNames[index],
+    color: teamColors[index],
+    pieces: [-1, -1],
+  }));
+  ludoState.turn = 0;
+  ludoState.dice = 0;
+  ludoState.started = true;
+  ludoState.over = false;
+  ludoLog.textContent = `${count} 人飞行棋开始，掷到 6 可以起飞。`;
+  renderLudo();
+}
 
 function renderLudo() {
   ludoBoard.innerHTML = "";
@@ -38,15 +49,15 @@ function renderLudo() {
     ludoBoard.appendChild(div);
   });
 
-  ludoTurn.textContent = ludoState.over ? "已结束" : ludoState.teams[ludoState.turn].name;
+  ludoTurn.textContent = !ludoState.started ? "等待开始" : ludoState.over ? "已结束" : ludoState.teams[ludoState.turn].name;
   ludoPieces.innerHTML = "";
-  ludoState.teams.forEach((team) => {
+  ludoState.teams.forEach((team, teamIndex) => {
     team.pieces.forEach((pos, index) => {
       const piece = document.createElement("button");
       piece.className = "piece-button";
       piece.type = "button";
       piece.textContent = `${team.name}${index + 1}: ${pos < 0 ? "待起飞" : pos >= 23 ? "到达" : pos}`;
-      piece.disabled = team !== ludoState.teams[ludoState.turn] || ludoState.dice === 0 || ludoState.over;
+      piece.disabled = teamIndex !== ludoState.turn || ludoState.dice === 0 || ludoState.over;
       piece.addEventListener("click", () => moveLudoPiece(index));
       ludoPieces.appendChild(piece);
     });
@@ -54,7 +65,7 @@ function renderLudo() {
 }
 
 function rollLudo() {
-  if (ludoState.over || ludoState.dice) return;
+  if (!ludoState.started || ludoState.over || ludoState.dice) return;
   ludoState.dice = Math.floor(Math.random() * 6) + 1;
   ludoLog.textContent = `${ludoState.teams[ludoState.turn].name} 掷出 ${ludoState.dice}。`;
   renderLudo();
@@ -88,20 +99,9 @@ function moveLudoPiece(pieceIndex) {
 
 function endLudoTurn() {
   ludoState.dice = 0;
-  ludoState.turn = 1 - ludoState.turn;
-}
-
-function resetLudo() {
-  ludoState.teams.forEach((team) => {
-    team.pieces = [-1, -1];
-  });
-  ludoState.turn = 0;
-  ludoState.dice = 0;
-  ludoState.over = false;
-  ludoLog.textContent = "掷到 6 可以让飞机起飞。";
-  renderLudo();
+  ludoState.turn = (ludoState.turn + 1) % ludoState.teams.length;
 }
 
 window.render_game_to_text = () => JSON.stringify(ludoState);
 window.advanceTime = () => renderLudo();
-renderLudo();
+startLudo();

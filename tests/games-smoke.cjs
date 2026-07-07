@@ -15,27 +15,37 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   });
   page.on("pageerror", (err) => errors.push(err.message));
 
-  const routes = [
-    { href: "monopoly.html", title: "大富翁" },
-    { href: "ludo.html", title: "飞行棋" },
-    { href: "checkers.html", title: "跳棋" },
-    { href: "landlord.html", title: "斗地主" },
-  ];
+  await page.goto(`${baseUrl}/monopoly.html`, { waitUntil: "networkidle" });
+  await page.selectOption("#monopolyPlayerCount", "4");
+  await page.click("#startMonopolyBtn");
+  const monopolyState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 
-  const seen = [];
-  for (const route of routes) {
-    await page.goto(baseUrl, { waitUntil: "networkidle" });
-    await page.click(`a[href="${route.href}"]`);
-    await page.waitForURL(new RegExp(route.href.replace(".", "\\.")));
-    const title = await page.locator(".brand h1").innerText();
-    seen.push({ href: route.href, title });
-  }
+  await page.goto(`${baseUrl}/ludo.html`, { waitUntil: "networkidle" });
+  await page.selectOption("#ludoPlayerCount", "4");
+  await page.click("#startLudoBtn");
+  const ludoState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+
+  await page.goto(`${baseUrl}/checkers.html`, { waitUntil: "networkidle" });
+  await page.selectOption("#checkersPlayerCount", "6");
+  await page.click("#startCheckersBtn");
+  const checkersState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+
+  await page.goto(`${baseUrl}/landlord.html`, { waitUntil: "networkidle" });
+  await page.click("#addRobotBtn");
+  await page.click("#startLandlordBtn");
+  const landlordState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  const addRobotDisabled = await page.locator("#addRobotBtn").isDisabled();
 
   await page.screenshot({ path: "outputs/games-smoke.png", fullPage: true });
   await browser.close();
 
-  console.log(JSON.stringify({ seen, errors }, null, 2));
+  console.log(JSON.stringify({ monopolyState, ludoState, checkersState, landlordState, addRobotDisabled, errors }, null, 2));
 
   if (errors.length) process.exit(1);
-  if (seen.some((item, index) => item.title !== routes[index].title)) process.exit(1);
+  if (monopolyState.players.length !== 4 || !monopolyState.started) process.exit(1);
+  if (ludoState.teams.length !== 4 || !ludoState.started) process.exit(1);
+  if (checkersState.players.length !== 6 || !checkersState.started) process.exit(1);
+  if (landlordState.seats.length !== 3 || !landlordState.started) process.exit(1);
+  if (!landlordState.seats.some((seat) => seat.type === "robot")) process.exit(1);
+  if (!addRobotDisabled) process.exit(1);
 })();

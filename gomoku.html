@@ -67,6 +67,26 @@
               <span id="turnBadge">黑棋先手</span>
               <strong id="matchStatus">创建或加入房间开始对战</strong>
             </div>
+            <section class="record-card" aria-label="当前房间战绩">
+              <div class="panel-title">
+                <h2>当前房间战绩</h2>
+                <span id="recordSession">新房间</span>
+              </div>
+              <div class="record-grid">
+                <div>
+                  <span>总局数</span>
+                  <strong id="totalGames">0</strong>
+                </div>
+                <div>
+                  <span>黑棋胜</span>
+                  <strong id="blackWins">0</strong>
+                </div>
+                <div>
+                  <span>白棋胜</span>
+                  <strong id="whiteWins">0</strong>
+                </div>
+              </div>
+            </section>
             <div class="actions">
               <button id="restartBtn" type="button">重新开始</button>
               <button id="undoBtn" type="button">悔棋</button>
@@ -75,6 +95,32 @@
           </aside>
         </section>
       </main>
+    </div>
+
+    <div id="resultModal" class="modal-backdrop" hidden>
+      <section class="result-dialog" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+        <p class="eyebrow">Game Set</p>
+        <h2 id="resultTitle">本局结束</h2>
+        <p id="resultSummary">黑棋获胜</p>
+        <div class="record-grid modal-record">
+          <div>
+            <span>总局数</span>
+            <strong id="modalTotalGames">0</strong>
+          </div>
+          <div>
+            <span>黑棋胜</span>
+            <strong id="modalBlackWins">0</strong>
+          </div>
+          <div>
+            <span>白棋胜</span>
+            <strong id="modalWhiteWins">0</strong>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button id="playAgainBtn" class="primary-btn" type="button">再开一把</button>
+          <button id="exitRoomBtn" type="button">退出</button>
+        </div>
+      </section>
     </div>
   </body>
 </html>

@@ -1,7 +1,11 @@
+const fs = require("fs");
 const { chromium } = require("playwright");
+
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
 
 (async () => {
+  fs.mkdirSync("outputs", { recursive: true });
+
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
   const errors = [];

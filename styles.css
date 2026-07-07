@@ -451,6 +451,43 @@ canvas {
   background: var(--panel);
 }
 
+.record-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.record-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.record-grid div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
+.record-grid span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.record-grid strong {
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1;
+}
+
 #turnBadge {
   color: var(--accent);
   font-size: 13px;
@@ -482,6 +519,57 @@ canvas {
   background: var(--panel-soft);
   color: var(--muted);
   font-size: 13px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(23, 33, 43, 0.48);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.result-dialog {
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+  padding: 22px;
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.result-dialog h2,
+.result-dialog p {
+  margin: 0;
+}
+
+.result-dialog h2 {
+  font-size: 28px;
+}
+
+#resultSummary {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.modal-record {
+  margin-top: 4px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.dialog-actions button {
+  flex: 1;
 }
 
 @media (max-width: 980px) {
@@ -521,5 +609,14 @@ canvas {
 
   .score-strip {
     justify-content: flex-start;
+  }
+
+  .record-grid,
+  .dialog-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dialog-actions {
+    flex-direction: column;
   }
 }

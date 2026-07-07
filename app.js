@@ -20,6 +20,18 @@ const turnBadge = document.querySelector("#turnBadge");
 const blackPlayer = document.querySelector("#blackPlayer");
 const whitePlayer = document.querySelector("#whitePlayer");
 const moveList = document.querySelector("#moveList");
+const recordSession = document.querySelector("#recordSession");
+const totalGames = document.querySelector("#totalGames");
+const blackWins = document.querySelector("#blackWins");
+const whiteWins = document.querySelector("#whiteWins");
+const resultModal = document.querySelector("#resultModal");
+const resultTitle = document.querySelector("#resultTitle");
+const resultSummary = document.querySelector("#resultSummary");
+const modalTotalGames = document.querySelector("#modalTotalGames");
+const modalBlackWins = document.querySelector("#modalBlackWins");
+const modalWhiteWins = document.querySelector("#modalWhiteWins");
+const playAgainBtn = document.querySelector("#playAgainBtn");
+const exitRoomBtn = document.querySelector("#exitRoomBtn");
 
 const state = {
   board: Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY)),
@@ -34,6 +46,10 @@ const state = {
   players: { black: "等待", white: "等待" },
   hover: null,
   message: "创建或加入房间开始对战",
+  record: { total: 0, black: 0, white: 0 },
+  recordLabel: "新房间",
+  gameCounted: false,
+  suppressCloseNotice: false,
 };
 
 function randomName() {
@@ -44,14 +60,26 @@ function ownName() {
   return nicknameInput.value.trim() || randomName();
 }
 
-function resetBoard(announce = true) {
+function colorName(color) {
+  return color === BLACK ? "黑棋" : "白棋";
+}
+
+function resetRoomRecord(label = "新房间") {
+  state.record = { total: 0, black: 0, white: 0 };
+  state.recordLabel = label;
+  state.gameCounted = false;
+}
+
+function resetBoard(announce = true, message = "黑棋先手") {
   state.board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY));
   state.moves = [];
   state.turn = BLACK;
   state.winner = EMPTY;
   state.hover = null;
-  state.message = "黑棋先手";
-  if (announce) send({ type: "reset" });
+  state.gameCounted = false;
+  state.message = message;
+  hideResultModal();
+  if (announce) send({ type: "reset", record: state.record });
   render();
 }
 
@@ -98,12 +126,30 @@ function placeStone(row, col, color, broadcast = true) {
   if (state.board[row][col] !== EMPTY || state.winner) return false;
   state.board[row][col] = color;
   state.moves.push({ row, col, color });
-  state.winner = checkWinner(row, col, color) ? color : EMPTY;
-  state.turn = color === BLACK ? WHITE : BLACK;
-  state.message = state.winner ? `${colorName(state.winner)}获胜` : `轮到${colorName(state.turn)}`;
-  if (broadcast) send({ type: "move", row, col, color });
+
+  if (checkWinner(row, col, color)) {
+    finishGame(color);
+  } else {
+    state.turn = color === BLACK ? WHITE : BLACK;
+    state.message = `轮到${colorName(state.turn)}`;
+  }
+
+  if (broadcast) send({ type: "move", row, col, color, record: state.record });
   render();
   return true;
+}
+
+function finishGame(winner) {
+  state.winner = winner;
+  state.turn = winner === BLACK ? WHITE : BLACK;
+  state.message = `${colorName(winner)}获胜`;
+  if (!state.gameCounted) {
+    state.record.total += 1;
+    if (winner === BLACK) state.record.black += 1;
+    if (winner === WHITE) state.record.white += 1;
+    state.gameCounted = true;
+  }
+  showResultModal();
 }
 
 function checkWinner(row, col, color) {
@@ -133,13 +179,19 @@ function countDirection(row, col, dr, dc, color) {
   return count;
 }
 
-function colorName(color) {
-  return color === BLACK ? "黑棋" : "白棋";
-}
-
 function updatePlayers() {
   blackPlayer.textContent = `黑棋：${state.players.black}`;
   whitePlayer.textContent = `白棋：${state.players.white}`;
+}
+
+function updateRecord() {
+  recordSession.textContent = state.recordLabel;
+  totalGames.textContent = state.record.total;
+  blackWins.textContent = state.record.black;
+  whiteWins.textContent = state.record.white;
+  modalTotalGames.textContent = state.record.total;
+  modalBlackWins.textContent = state.record.black;
+  modalWhiteWins.textContent = state.record.white;
 }
 
 function updateMoveList() {
@@ -235,9 +287,21 @@ function drawGhost(row, col, color) {
   ctx.fill();
 }
 
+function showResultModal() {
+  resultTitle.textContent = "本局结束";
+  resultSummary.textContent = `${colorName(state.winner)}获胜，要再开一把吗？`;
+  updateRecord();
+  resultModal.hidden = false;
+}
+
+function hideResultModal() {
+  resultModal.hidden = true;
+}
+
 function render() {
   drawBoard();
   updatePlayers();
+  updateRecord();
   updateMoveList();
   turnBadge.textContent = state.winner ? `${colorName(state.winner)}胜利` : `当前：${colorName(state.turn)}`;
   matchStatus.textContent = state.message;
@@ -245,13 +309,16 @@ function render() {
 
 function send(payload) {
   if (state.conn && state.conn.open) {
-    state.conn.send({ ...payload, players: state.players });
+    state.conn.send({ ...payload, players: state.players, record: state.record, recordLabel: state.recordLabel });
   }
 }
 
 function receive(payload) {
   if (!payload || typeof payload !== "object") return;
   if (payload.players) state.players = payload.players;
+  if (payload.record) state.record = payload.record;
+  if (payload.recordLabel) state.recordLabel = payload.recordLabel;
+
   if (payload.type === "move") {
     placeStone(payload.row, payload.col, payload.color, false);
   }
@@ -261,10 +328,22 @@ function receive(payload) {
   if (payload.type === "undo") {
     undoMove(false);
   }
+  if (payload.type === "leave") {
+    handleRemoteLeave();
+  }
   if (payload.type === "hello" && state.role === "black") {
     state.players.white = payload.name || "白棋玩家";
     state.message = "好友已加入，黑棋先手";
-    send({ type: "welcome", players: state.players, board: state.board, moves: state.moves, turn: state.turn, winner: state.winner });
+    send({
+      type: "welcome",
+      players: state.players,
+      board: state.board,
+      moves: state.moves,
+      turn: state.turn,
+      winner: state.winner,
+      record: state.record,
+      recordLabel: state.recordLabel,
+    });
   }
   if (payload.type === "welcome") {
     state.players = payload.players || state.players;
@@ -272,7 +351,10 @@ function receive(payload) {
     state.moves = payload.moves || state.moves;
     state.turn = payload.turn || BLACK;
     state.winner = payload.winner || EMPTY;
+    state.record = payload.record || state.record;
+    state.recordLabel = payload.recordLabel || state.recordLabel;
     state.message = "已加入房间，等待黑棋落子";
+    if (state.winner) showResultModal();
   }
   render();
 }
@@ -289,8 +371,11 @@ function connectEvents(conn) {
   });
   conn.on("data", receive);
   conn.on("close", () => {
+    if (state.suppressCloseNotice) return;
+    resetRoomRecord("玩家离开后已重置");
+    resetBoard(false, "连接已断开，当前房间战绩已清零");
     setStatus("连接断开");
-    state.message = "连接已断开，可重新创建或加入房间";
+    state.mode = "idle";
     render();
   });
   conn.on("error", () => {
@@ -328,6 +413,7 @@ function hostRoom() {
     state.mode = "online";
     state.roomId = peer.id;
     state.players = { black: name, white: "等待加入" };
+    resetRoomRecord("当前房间");
     roomInput.value = peer.id;
     const url = new URL("gomoku.html", window.location.href);
     url.searchParams.set("room", peer.id);
@@ -341,7 +427,7 @@ function hostRoom() {
       }
       connectEvents(conn);
     });
-    resetBoard(false);
+    resetBoard(false, "黑棋先手");
   });
 }
 
@@ -358,6 +444,7 @@ function joinRoom() {
     state.role = "white";
     state.mode = "online";
     state.players = { black: "房主", white: name };
+    resetRoomRecord("当前房间");
     connectEvents(peer.connect(roomId, { reliable: true }));
     state.message = "正在加入房间";
     render();
@@ -368,9 +455,9 @@ function startLocal() {
   state.mode = "local";
   state.role = "both";
   state.players = { black: "本地玩家 A", white: "本地玩家 B" };
-  state.message = "本地对战已开始";
+  resetRoomRecord("本地房间");
   setStatus("本地对战", true);
-  resetBoard(false);
+  resetBoard(false, "本地对战已开始");
 }
 
 function undoMove(broadcast = true) {
@@ -380,6 +467,27 @@ function undoMove(broadcast = true) {
   state.turn = move.color;
   state.message = `已悔棋，轮到${colorName(state.turn)}`;
   if (broadcast) send({ type: "undo" });
+  render();
+}
+
+function playAgain() {
+  resetBoard(true, "再开一把，黑棋先手");
+}
+
+function exitToLobby() {
+  state.suppressCloseNotice = true;
+  send({ type: "leave" });
+  if (state.conn && state.conn.open) state.conn.close();
+  if (state.peer && !state.peer.destroyed) state.peer.destroy();
+  window.location.href = "index.html";
+}
+
+function handleRemoteLeave() {
+  resetRoomRecord("玩家离开后已重置");
+  resetBoard(false, "对方已退出，当前房间战绩已清零");
+  state.players = { black: "等待", white: "等待" };
+  state.mode = "idle";
+  setStatus("玩家退出");
   render();
 }
 
@@ -407,8 +515,13 @@ canvas.addEventListener("click", (event) => {
 hostBtn.addEventListener("click", hostRoom);
 joinBtn.addEventListener("click", joinRoom);
 localBtn.addEventListener("click", startLocal);
-restartBtn.addEventListener("click", () => resetBoard(true));
+restartBtn.addEventListener("click", () => {
+  resetRoomRecord(state.mode === "local" ? "本地房间" : "当前房间");
+  resetBoard(true, "已重新开房，战绩已清零");
+});
 undoBtn.addEventListener("click", () => undoMove(true));
+playAgainBtn.addEventListener("click", playAgain);
+exitRoomBtn.addEventListener("click", exitToLobby);
 copyBtn.addEventListener("click", async () => {
   if (!shareInput.value) return;
   await navigator.clipboard.writeText(shareInput.value);
@@ -426,6 +539,9 @@ window.render_game_to_text = () =>
     turn: colorName(state.turn),
     winner: state.winner ? colorName(state.winner) : null,
     players: state.players,
+    record: state.record,
+    recordLabel: state.recordLabel,
+    modalOpen: !resultModal.hidden,
     moves: state.moves.map((move) => ({ row: move.row, col: move.col, color: colorName(move.color) })),
     message: state.message,
   });

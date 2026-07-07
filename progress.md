@@ -37,3 +37,9 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Non-self hands in Landlord now render as side-view card backs and only expose hand counts in text state.
 - Rebuilt `checkers.html` and `checkers.js` as clean UTF-8 and replaced the square board with a star-shaped Chinese Checkers board matching the provided reference style.
 - Verified with `npm test` and screenshots at `outputs/landlord-bidding-hidden-hands.png` and `outputs/checkers-star-board-v3.png`.
+
+## 2026-07-07 Gomoku Result Panel Visibility
+
+- Changed Gomoku result UI from a centered blocking modal to a bottom-right floating panel so the winning five-stone line remains visible on the board.
+- Kept the same `resultModal`, replay, and exit controls so the existing interaction and tests remain intact.
+- Verified with `node tests/gomoku-smoke.cjs` and the updated `outputs/gomoku-modal.png`.

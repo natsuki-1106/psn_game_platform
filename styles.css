@@ -650,13 +650,14 @@ canvas {
 }
 
 .modal-backdrop {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
   z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: rgba(23, 33, 43, 0.48);
+  display: block;
+  padding: 0;
+  background: transparent;
+  pointer-events: none;
 }
 
 .modal-backdrop[hidden] {
@@ -666,11 +667,14 @@ canvas {
 .result-dialog {
   display: grid;
   gap: 14px;
-  width: min(420px, 100%);
-  padding: 22px;
+  width: min(360px, calc(100vw - 48px));
+  padding: 18px;
   border-radius: 8px;
-  background: var(--panel);
-  box-shadow: var(--shadow);
+  background: rgba(248, 250, 252, 0.96);
+  border: 1px solid rgba(199, 212, 225, 0.9);
+  box-shadow: 0 16px 32px rgba(23, 33, 43, 0.16);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
 }
 
 .result-dialog h2,
@@ -679,7 +683,7 @@ canvas {
 }
 
 .result-dialog h2 {
-  font-size: 28px;
+  font-size: 24px;
 }
 
 #resultSummary {
@@ -1711,6 +1715,15 @@ canvas {
 
   .dialog-actions {
     flex-direction: column;
+  }
+
+  .modal-backdrop {
+    position: static;
+    margin-top: 12px;
+  }
+
+  .result-dialog {
+    width: 100%;
   }
 
   .single-layout,

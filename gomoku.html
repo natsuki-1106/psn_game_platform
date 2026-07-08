@@ -95,6 +95,13 @@
               <button id="restartBtn" type="button">重新开始</button>
               <button id="undoBtn" type="button">悔棋</button>
             </div>
+            <div id="undoRequestPanel" class="undo-request-panel" hidden>
+              <strong id="undoRequestText">对方请求悔棋</strong>
+              <div class="actions">
+                <button id="approveUndoBtn" class="primary-btn" type="button">同意</button>
+                <button id="rejectUndoBtn" type="button">拒绝</button>
+              </div>
+            </div>
             <ol id="moveList" class="move-list" aria-label="落子记录"></ol>
           </aside>
         </section>

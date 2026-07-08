@@ -9,6 +9,10 @@ const roomInput = document.querySelector("#roomInput");
 const localBtn = document.querySelector("#localBtn");
 const restartBtn = document.querySelector("#restartBtn");
 const undoBtn = document.querySelector("#undoBtn");
+const approveUndoBtn = document.querySelector("#approveUndoBtn");
+const rejectUndoBtn = document.querySelector("#rejectUndoBtn");
+const undoRequestPanel = document.querySelector("#undoRequestPanel");
+const undoRequestText = document.querySelector("#undoRequestText");
 const connectionStatus = document.querySelector("#connectionStatus");
 const matchStatus = document.querySelector("#matchStatus");
 const turnBadge = document.querySelector("#turnBadge");
@@ -42,6 +46,7 @@ const state = {
   record: { total: 0, black: 0, white: 0 },
   recordLabel: "新房间",
   gameCounted: false,
+  undoRequest: null,
   room: null,
 };
 
@@ -50,17 +55,7 @@ let roomApi = null;
 roomApi = window.initRoomPanel({
   gameKey: "gomoku",
   prefix: "WZ",
-  getSnapshot: () => ({
-    board: state.board,
-    moves: state.moves,
-    turn: state.turn,
-    winner: state.winner,
-    players: state.players,
-    message: state.message,
-    record: state.record,
-    recordLabel: state.recordLabel,
-    gameCounted: state.gameCounted,
-  }),
+  getSnapshot: () => roomSnapshot(),
   onRemoteState(snapshot) {
     applyRoomSnapshot(snapshot);
     render();
@@ -103,6 +98,12 @@ function createBoard() {
 
 function colorName(color) {
   return color === BLACK ? "黑棋" : "白棋";
+}
+
+function ownColor() {
+  if (state.role === "black") return BLACK;
+  if (state.role === "white") return WHITE;
+  return EMPTY;
 }
 
 function setStatus(text, connected = false) {
@@ -149,6 +150,7 @@ function roomSnapshot() {
     record: state.record,
     recordLabel: state.recordLabel,
     gameCounted: state.gameCounted,
+    undoRequest: state.undoRequest,
   };
 }
 
@@ -163,6 +165,7 @@ function applyRoomSnapshot(snapshot) {
   state.record = snapshot.record || state.record;
   state.recordLabel = snapshot.recordLabel || state.recordLabel;
   state.gameCounted = Boolean(snapshot.gameCounted);
+  state.undoRequest = snapshot.undoRequest || null;
   if (state.winner) showResultModal();
   else hideResultModal();
 }
@@ -180,6 +183,7 @@ function resetBoard(announce = true, message = "黑棋先手") {
   state.winner = EMPTY;
   state.hover = null;
   state.gameCounted = false;
+  state.undoRequest = null;
   state.message = message;
   hideResultModal();
   render();
@@ -202,6 +206,23 @@ function updateRoomControls() {
   const inOnlineRoom = state.mode === "online" && Boolean(state.roomId);
   if (localBtn) localBtn.hidden = inOnlineRoom;
   if (restartBtn) restartBtn.hidden = isGithubPages();
+}
+
+function updateUndoPanel() {
+  const request = state.undoRequest;
+  const myColor = ownColor();
+  const shouldReview = request && state.mode === "online" && request.requesterColor !== myColor;
+  undoRequestPanel.hidden = !shouldReview;
+  if (shouldReview) {
+    undoRequestText.textContent = `${colorName(request.requesterColor)}请求悔一步`;
+  }
+  const ownPending = request && request.requesterColor === myColor;
+  undoBtn.disabled = Boolean(request) || state.winner || !state.moves.length || state.mode === "idle";
+  if (ownPending) {
+    undoBtn.textContent = "等待对方同意";
+  } else {
+    undoBtn.textContent = "悔棋";
+  }
 }
 
 function updatePlayers() {
@@ -291,6 +312,7 @@ function renderStatus() {
   updatePlayers();
   updateRecord();
   updateMoves();
+  updateUndoPanel();
   turnBadge.textContent = state.winner ? `${colorName(state.winner)}获胜` : `${colorName(state.turn)}回合`;
   matchStatus.textContent = state.message;
   updateRoomControls();
@@ -329,7 +351,7 @@ function pointToCell(point) {
 }
 
 function canPlay() {
-  if (state.winner) return false;
+  if (state.winner || state.undoRequest) return false;
   if (state.mode === "local") return true;
   if (state.mode !== "online") return false;
   return (state.role === "black" && state.turn === BLACK) || (state.role === "white" && state.turn === WHITE);
@@ -369,9 +391,9 @@ function finishGame(color) {
 }
 
 function placeStone(row, col, color, shouldBroadcast = true) {
-  if (state.board[row][col] !== EMPTY || state.winner) return false;
+  if (state.board[row][col] !== EMPTY || state.winner || state.undoRequest) return false;
   state.board[row][col] = color;
-  state.moves.push({ row, col, color });
+  state.moves.push({ row, col, color, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
   if (checkWinner(row, col, color)) {
     finishGame(color);
   } else {
@@ -383,12 +405,64 @@ function placeStone(row, col, color, shouldBroadcast = true) {
   return true;
 }
 
-function undoMove() {
-  if (!state.moves.length || state.winner) return;
-  const move = state.moves.pop();
+function removeMove(moveIndex) {
+  const [move] = state.moves.splice(moveIndex, 1);
+  if (!move) return false;
   state.board[move.row][move.col] = EMPTY;
   state.turn = move.color;
-  state.message = `已悔棋，轮到${colorName(state.turn)}`;
+  state.winner = EMPTY;
+  state.message = `${colorName(move.color)}已悔一步，轮到${colorName(state.turn)}`;
+  state.undoRequest = null;
+  hideResultModal();
+  return true;
+}
+
+function requestUndo() {
+  if (!state.moves.length || state.winner || state.undoRequest) return;
+  const requesterColor = state.mode === "local" ? state.moves.at(-1).color : ownColor();
+  const moveIndex = state.moves.length - 1;
+  const move = state.moves[moveIndex];
+  if (!move || move.color !== requesterColor) {
+    state.message = "只能申请悔自己刚下的最后一步";
+    render();
+    return;
+  }
+
+  if (state.mode === "local") {
+    removeMove(moveIndex);
+    render();
+    return;
+  }
+
+  state.undoRequest = {
+    requesterColor,
+    moveIndex,
+    moveId: move.id || `${move.row}-${move.col}-${move.color}-${moveIndex}`,
+    createdAt: Date.now(),
+  };
+  state.message = `${colorName(requesterColor)}请求悔一步，等待对方同意`;
+  render();
+  broadcastSnapshot();
+}
+
+function resolveUndoRequest(approved) {
+  const request = state.undoRequest;
+  if (!request) return;
+  const reviewerColor = ownColor();
+  if (state.mode === "online" && request.requesterColor === reviewerColor) return;
+
+  if (approved) {
+    const move = state.moves[request.moveIndex];
+    if (move && move.color === request.requesterColor) {
+      removeMove(request.moveIndex);
+    } else {
+      state.undoRequest = null;
+      state.message = "悔棋失败，棋局已变化";
+    }
+  } else {
+    state.message = `${colorName(reviewerColor)}拒绝悔棋`;
+    state.undoRequest = null;
+  }
   render();
   broadcastSnapshot();
 }
@@ -416,7 +490,7 @@ canvas.addEventListener("click", (event) => {
   const cell = pointToCell(canvasPoint(event));
   if (!cell) return;
   if (!canPlay()) {
-    state.message = state.winner ? `${colorName(state.winner)}已获胜` : "还没轮到你落子";
+    state.message = state.undoRequest ? "悔棋申请处理中，暂不能落子" : state.winner ? `${colorName(state.winner)}已获胜` : "还没轮到你落子";
     render();
     return;
   }
@@ -428,7 +502,9 @@ restartBtn.addEventListener("click", () => {
   resetRoomRecord(state.mode === "local" ? "本地房间" : "当前房间");
   resetBoard(true, "已重新开局，战绩已清零");
 });
-undoBtn.addEventListener("click", undoMove);
+undoBtn.addEventListener("click", requestUndo);
+approveUndoBtn.addEventListener("click", () => resolveUndoRequest(true));
+rejectUndoBtn.addEventListener("click", () => resolveUndoRequest(false));
 playAgainBtn.addEventListener("click", playAgain);
 exitRoomBtn.addEventListener("click", exitToLobby);
 
@@ -446,7 +522,8 @@ window.render_game_to_text = () =>
     record: state.record,
     recordLabel: state.recordLabel,
     modalOpen: !resultModal.hidden,
-    moves: state.moves.map((move) => ({ row: move.row, col: move.col, color: colorName(move.color) })),
+    undoRequest: state.undoRequest,
+    moves: state.moves.map((move) => ({ row: move.row, col: move.col, color: colorName(move.color), id: move.id || null })),
     message: state.message,
     connectionStatus: connectionStatus.textContent,
     peerId: roomApi?.state?.sessionId || "",

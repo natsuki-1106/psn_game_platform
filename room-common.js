@@ -1,6 +1,7 @@
 (function () {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const ROOM_VERSION = 2;
+  const ROOM_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 
   function makeRoomId(prefix) {
     let code = prefix.toUpperCase().slice(0, 2);
@@ -59,6 +60,25 @@
       channel: null,
       connected: false,
     };
+    let idleTimer = null;
+
+    function clearIdleTimer() {
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+      }
+    }
+
+    function touchRoomActivity() {
+      clearIdleTimer();
+      if (!state.roomId) return;
+      idleTimer = setTimeout(async () => {
+        if (!state.roomId) return;
+        await send({ type: "leave", reason: "idle-timeout" });
+        clearTransport();
+        clearRoomState();
+      }, ROOM_IDLE_TIMEOUT_MS);
+    }
 
     function save() {
       if (!state.roomId) {
@@ -129,6 +149,7 @@
 
     async function send(payload) {
       if (!transport.channel) return;
+      if (payload.type !== "leave") touchRoomActivity();
       await transport.channel.send({
         type: "broadcast",
         event: "room-event",
@@ -164,6 +185,7 @@
     }
 
     function clearTransport() {
+      clearIdleTimer();
       if (transport.channel) {
         transport.channel.unsubscribe();
       }
@@ -176,6 +198,7 @@
     }
 
     function clearRoomState() {
+      clearIdleTimer();
       state.roomId = "";
       state.role = "none";
       state.online = "idle";
@@ -188,6 +211,7 @@
     function receive(payload) {
       if (!payload || payload.senderId === state.sessionId) return;
       if (payload.gameKey !== gameKey || payload.roomId !== state.roomId) return;
+      if (payload.type !== "leave") touchRoomActivity();
 
       if (payload.type === "presence") {
         state.members[payload.senderId] = {
@@ -273,6 +297,7 @@
       url.searchParams.set("room", state.roomId);
       history.replaceState(null, "", url);
       updateStatus();
+      touchRoomActivity();
       await connect();
     }
 
@@ -285,6 +310,7 @@
 
     function broadcast(payload) {
       if (!state.roomId || !transport.connected) return;
+      touchRoomActivity();
       const message = {
         type: "state",
         snapshot: safeJson(payload),

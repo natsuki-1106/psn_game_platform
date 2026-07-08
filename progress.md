@@ -76,3 +76,11 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Rebuilt `monopoly.js` as clean UTF-8 and changed property purchase from auto-buy to explicit player choice via `购买 / 跳过`, with center-board status copy, stronger piece tokens, owner/house markers, and side-vs-mobile asset layout hooks.
 - Rebuilt `landlord.js` as clean UTF-8, kept hidden-hand / bidding / robot / hint rules, and moved bidding + play buttons into the center table area with side-player last-play display and standard suit symbols.
 - Updated `tests/gomoku-smoke.cjs` for the new Gomoku room-entered UX and re-ran the full suite with `BASE_URL=http://127.0.0.1:8096`.
+
+## 2026-07-08 Shared Room Layer For Gomoku
+
+- Added room-common.js to gomoku.html and rebuilt gomoku-app.js so Gomoku now uses the same shared room creation, join, leave, share-link, and Supabase Realtime channel layer as the other four games.
+- Kept Gomoku-specific behavior inside gomoku-app.js: board drawing, move validation, win detection, current-room record, replay, undo, local mode, and result dialog.
+- Added a shared 10-minute idle room timeout in room-common.js; create/join, sent state, and received state all refresh the timer, and inactive rooms auto-close by leaving the room.
+- Verified with BASE_URL=http://127.0.0.1:8096 npm test; Gomoku now reports transportKind: shared-supabase.
+

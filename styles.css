@@ -511,7 +511,7 @@ label {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 22px;
-  padding: 30px;
+  padding: clamp(16px, 2.8vw, 30px);
 }
 
 .eyebrow {
@@ -551,7 +551,7 @@ label {
 }
 
 .canvas-wrap {
-  width: min(100%, 760px);
+  width: min(100%, 760px, calc(100svh - 210px));
   aspect-ratio: 1;
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -723,7 +723,7 @@ canvas {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 20px;
-  padding: 30px;
+  padding: clamp(16px, 2.8vw, 30px);
 }
 
 .info-card,
@@ -762,19 +762,20 @@ canvas {
 }
 
 .monopoly-board-wrap {
-  overflow-x: auto;
+  display: grid;
+  justify-items: center;
 }
 
 .monopoly-map {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(11, minmax(68px, 1fr));
-  grid-template-rows: repeat(11, minmax(68px, 1fr));
-  gap: 3px;
-  width: min(100%, 1040px);
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  grid-template-rows: repeat(11, minmax(0, 1fr));
+  gap: clamp(1px, 0.28vw, 3px);
+  width: min(100%, 1040px, calc(100svh - 180px));
   aspect-ratio: 1;
-  padding: 16px;
-  border: 10px solid #273c57;
+  padding: clamp(8px, 1.2vw, 16px);
+  border: clamp(6px, 0.8vw, 10px) solid #273c57;
   border-radius: 8px;
   background:
     linear-gradient(90deg, rgba(39, 60, 87, 0.08) 1px, transparent 1px),
@@ -793,7 +794,7 @@ canvas {
   grid-column: 3 / 10;
   grid-row: 3 / 10;
   min-width: 0;
-  padding: 26px;
+  padding: clamp(14px, 2vw, 26px);
   border: 2px solid rgba(39, 60, 87, 0.24);
   border-radius: 8px;
   background:
@@ -838,12 +839,12 @@ canvas {
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 74px;
-  height: 74px;
+  width: clamp(54px, 5vw, 74px);
+  height: clamp(54px, 5vw, 74px);
   border-radius: 16px;
   background: #fff4d6;
   color: #8f6510;
-  font-size: 34px;
+  font-size: clamp(24px, 2.6vw, 34px);
   font-weight: 900;
   box-shadow: 0 10px 24px rgba(23, 33, 43, 0.12);
 }
@@ -851,11 +852,11 @@ canvas {
 .monopoly-cell {
   position: relative;
   display: grid;
-  grid-template-rows: 18px 1fr auto;
-  gap: 2px;
+  grid-template-rows: auto 1fr auto;
+  gap: 1px;
   min-width: 0;
   min-height: 0;
-  padding: 5px 4px 4px;
+  padding: clamp(3px, 0.35vw, 5px) clamp(2px, 0.35vw, 4px) clamp(3px, 0.35vw, 4px);
   border: 1px solid rgba(23, 33, 43, 0.22);
   border-radius: 3px;
   background: linear-gradient(180deg, #fffdf7, #f7f0df);
@@ -867,15 +868,15 @@ canvas {
 .monopoly-cell strong {
   display: grid;
   align-items: center;
-  min-height: 22px;
-  font-size: 11px;
+  min-height: 0;
+  font-size: clamp(8px, 0.78vw, 11px);
   line-height: 1.12;
   word-break: keep-all;
 }
 
 .monopoly-cell small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: clamp(7px, 0.72vw, 11px);
   font-weight: 800;
 }
 
@@ -884,7 +885,7 @@ canvas {
   top: 2px;
   left: 3px;
   color: rgba(36, 48, 62, 0.54);
-  font-size: 8px;
+  font-size: clamp(6px, 0.55vw, 8px);
   font-weight: 900;
 }
 
@@ -892,8 +893,8 @@ canvas {
   position: relative;
   display: block;
   justify-self: center;
-  width: 34px;
-  height: 18px;
+  width: clamp(20px, 3vw, 34px);
+  height: clamp(12px, 1.7vw, 18px);
   border: 1px solid rgba(23, 33, 43, 0.2);
   border-radius: 2px;
   overflow: hidden;
@@ -906,7 +907,7 @@ canvas {
   display: grid;
   place-items: center;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 7px;
+  font-size: clamp(5px, 0.5vw, 7px);
   font-style: normal;
   font-weight: 900;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
@@ -915,8 +916,8 @@ canvas {
 .country-symbol {
   display: grid;
   place-items: center;
-  min-height: 18px;
-  font-size: 16px;
+  min-height: 0;
+  font-size: clamp(10px, 1.2vw, 16px);
   line-height: 1;
 }
 
@@ -1083,13 +1084,13 @@ canvas {
 .ludo-map {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(15, minmax(32px, 1fr));
-  grid-template-rows: repeat(15, minmax(32px, 1fr));
-  gap: 3px;
-  width: min(100%, 740px);
+  grid-template-columns: repeat(15, minmax(0, 1fr));
+  grid-template-rows: repeat(15, minmax(0, 1fr));
+  gap: clamp(1px, 0.28vw, 3px);
+  width: min(100%, 740px, calc(100svh - 190px));
   aspect-ratio: 1;
-  padding: 14px;
-  border: 8px solid #1f2d3d;
+  padding: clamp(8px, 1vw, 14px);
+  border: clamp(5px, 0.8vw, 8px) solid #1f2d3d;
   border-radius: 8px;
   background:
     linear-gradient(90deg, rgba(31, 45, 61, 0.06) 1px, transparent 1px),
@@ -1103,11 +1104,11 @@ canvas {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: auto repeat(2, 1fr);
-  gap: 8px;
+  gap: clamp(4px, 0.8vw, 8px);
   align-items: center;
   justify-items: center;
-  padding: 10px;
-  border: 3px solid currentColor;
+  padding: clamp(6px, 0.9vw, 10px);
+  border: clamp(2px, 0.35vw, 3px) solid currentColor;
   border-radius: 8px;
   background: #fff;
   color: var(--ink);
@@ -1116,7 +1117,7 @@ canvas {
 
 .ludo-home strong {
   grid-column: 1 / -1;
-  font-size: 12px;
+  font-size: clamp(9px, 0.9vw, 12px);
 }
 
 .ludo-home span {
@@ -1156,11 +1157,11 @@ canvas {
   place-items: center;
   min-width: 0;
   min-height: 0;
-  border: 2px solid currentColor;
+  border: clamp(1px, 0.24vw, 2px) solid currentColor;
   border-radius: 4px;
   background: #fff;
   color: #7a8795;
-  font-size: 11px;
+  font-size: clamp(8px, 0.85vw, 11px);
   font-weight: 900;
 }
 
@@ -1202,7 +1203,7 @@ canvas {
 }
 
 .ludo-center span {
-  font-size: 28px;
+  font-size: clamp(18px, 2vw, 28px);
   line-height: 1;
 }
 
@@ -1219,7 +1220,7 @@ canvas {
   border-radius: 50%;
   background: currentColor;
   color: #fff;
-  font-size: 17px;
+  font-size: clamp(11px, 1.3vw, 17px);
   box-shadow: 0 6px 12px rgba(23, 33, 43, 0.18);
 }
 
@@ -1485,9 +1486,9 @@ canvas {
 
 .checkers-board {
   position: relative;
-  width: min(100%, 760px);
+  width: min(100%, 760px, calc(100svh - 180px));
   aspect-ratio: 1 / 1.08;
-  border: 8px solid #17212b;
+  border: clamp(5px, 0.8vw, 8px) solid #17212b;
   border-radius: 8px;
   overflow: hidden;
   padding: 4%;
@@ -1711,8 +1712,8 @@ canvas {
 .landlord-table {
   position: relative;
   display: grid;
-  min-height: 680px;
-  padding: 28px;
+  min-height: min(680px, calc(100svh - 180px));
+  padding: clamp(14px, 2vw, 28px);
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
@@ -1723,7 +1724,7 @@ canvas {
 
 .landlord-seats {
   position: relative;
-  min-height: 620px;
+  min-height: min(620px, calc(100svh - 240px));
 }
 
 .landlord-center {
@@ -1731,7 +1732,7 @@ canvas {
   inset: 50% auto auto 50%;
   display: grid;
   gap: 14px;
-  width: min(480px, calc(100% - 140px));
+  width: min(480px, calc(100% - 80px));
   transform: translate(-50%, -50%);
 }
 
@@ -1835,8 +1836,8 @@ canvas {
     grid-template-columns: 1fr;
   }
 
-  .monopoly-map {
-    width: max(920px, 100%);
+  .monopoly-sidecard {
+    order: 2;
   }
 
   .sidebar {
@@ -1846,6 +1847,20 @@ canvas {
 
   .board-layout {
     grid-template-columns: 1fr;
+  }
+
+  .ludo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ludo-sidecard {
+    order: 2;
+  }
+
+  .single-layout,
+  .monopoly-layout,
+  .board-layout {
+    justify-items: center;
   }
 }
 
@@ -1892,60 +1907,54 @@ canvas {
     width: 100%;
   }
 
-  .single-layout,
-  .monopoly-layout,
-  .board-layout {
-    overflow-x: auto;
-    align-items: start;
-  }
-
   .canvas-wrap {
     width: 100%;
-    min-width: 320px;
   }
 
   .board-layout {
-    grid-template-columns: minmax(320px, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .single-layout {
-    grid-template-columns: minmax(320px, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .ludo-layout {
-    grid-template-columns: minmax(320px, 1fr);
-  }
-
-  .ludo-map {
-    width: 640px;
-    min-width: 640px;
-  }
-
-  .checkers-board {
-    min-width: 320px;
-  }
-
-  .monopoly-map {
-    width: 920px;
-    min-width: 920px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .landlord-table {
-    min-width: 720px;
-    min-height: 640px;
-    padding: 18px;
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .landlord-table,
+  .landlord-seats {
+    display: grid;
+    gap: 12px;
+  }
+
+  .landlord-seats {
+    min-height: 0;
+  }
+
+  .landlord-center,
+  .landlord-seat,
+  .seat-0,
+  .seat-1,
+  .seat-2 {
+    position: static;
+    inset: auto;
+    width: 100%;
+    transform: none;
   }
 
   .landlord-center {
-    width: 360px;
+    order: -1;
   }
 
-  .landlord-seat {
-    width: 250px;
-  }
-
-  .seat-0 {
-    width: 640px;
+  .seat-played {
+    min-height: 68px;
   }
 
   .monopoly-sidecard .stat-grid {
@@ -1970,5 +1979,27 @@ canvas {
 
   .piece-button {
     width: 100%;
+  }
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .board-layout,
+  .single-layout,
+  .monopoly-layout,
+  .ludo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .match-panel,
+  .monopoly-sidecard,
+  .ludo-sidecard {
+    width: min(100%, 760px);
+  }
+
+  .canvas-wrap,
+  .ludo-map,
+  .monopoly-map,
+  .checkers-board {
+    width: min(100%, calc(100svh - 220px));
   }
 }

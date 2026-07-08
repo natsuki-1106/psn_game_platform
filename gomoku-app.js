@@ -14,6 +14,7 @@ const shareInput = document.querySelector("#shareInput");
 const hostBtn = document.querySelector("#hostBtn");
 const joinBtn = document.querySelector("#joinBtn");
 const localBtn = document.querySelector("#localBtn");
+const leaveRoomBtn = document.querySelector("#leaveRoomBtn");
 const copyBtn = document.querySelector("#copyBtn");
 const restartBtn = document.querySelector("#restartBtn");
 const undoBtn = document.querySelector("#undoBtn");
@@ -327,11 +328,27 @@ function renderStatus() {
   updateMoves();
   turnBadge.textContent = state.winner ? `${colorName(state.winner)}获胜` : `${colorName(state.turn)}回合`;
   matchStatus.textContent = state.message;
+  updateRoomControls();
 }
 
 function render() {
   renderBoard();
   renderStatus();
+}
+
+function isGithubPages() {
+  return /\.github\.io$/i.test(window.location.hostname);
+}
+
+function updateRoomControls() {
+  const inRoom = state.mode !== "idle";
+  if (hostBtn) hostBtn.hidden = inRoom;
+  if (joinBtn) joinBtn.hidden = inRoom;
+  if (localBtn) localBtn.hidden = inRoom;
+  if (leaveRoomBtn) leaveRoomBtn.hidden = !inRoom;
+  if (roomInput) roomInput.disabled = inRoom;
+  if (nicknameInput) nicknameInput.disabled = inRoom;
+  if (restartBtn) restartBtn.hidden = isGithubPages();
 }
 
 function cellGeometry() {
@@ -444,6 +461,7 @@ function handleRemoteLeave() {
 }
 
 function closeTransport() {
+  clearConnectTimer();
   if (state.transport.channel) {
     state.transport.channel.unsubscribe();
   }
@@ -453,6 +471,32 @@ function closeTransport() {
   state.transport.connOpen = false;
   state.transport.guestId = "";
   state.transport.guestName = "";
+}
+
+function resetToIdle(message = "已退出房间") {
+  closeTransport();
+  clearSession();
+  state.board = createBoard();
+  state.moves = [];
+  state.turn = BLACK;
+  state.winner = EMPTY;
+  state.mode = "idle";
+  state.role = "spectator";
+  state.roomId = "";
+  state.players = { black: "等待", white: "等待" };
+  state.hover = null;
+  state.message = message;
+  state.record = { total: 0, black: 0, white: 0 };
+  state.recordLabel = "新房间";
+  state.gameCounted = false;
+  state.connectAttempt = 0;
+  roomInput.disabled = false;
+  nicknameInput.disabled = false;
+  shareInput.value = "";
+  hideResultModal();
+  setStatus("未连接");
+  history.replaceState(null, "", "gomoku.html");
+  render();
 }
 
 function ensureSupabaseClient() {
@@ -676,6 +720,12 @@ function exitToLobby() {
   window.location.href = "index.html";
 }
 
+function leaveCurrentRoom() {
+  state.suppressCloseNotice = true;
+  broadcast({ type: "leave" });
+  resetToIdle("已退出房间，可以重新创建或加入房间");
+}
+
 canvas.addEventListener("mousemove", (event) => {
   state.hover = pointToCell(canvasPoint(event));
   render();
@@ -707,6 +757,7 @@ restartBtn.addEventListener("click", () => {
 undoBtn.addEventListener("click", () => undoMove(true));
 playAgainBtn.addEventListener("click", playAgain);
 exitRoomBtn.addEventListener("click", exitToLobby);
+leaveRoomBtn.addEventListener("click", leaveCurrentRoom);
 copyBtn.addEventListener("click", async () => {
   if (!shareInput.value) return;
   await navigator.clipboard.writeText(shareInput.value);

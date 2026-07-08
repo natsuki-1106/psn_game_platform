@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LinkPlay 大富翁</title>
     <link rel="stylesheet" href="styles.css" />
-    <script defer src="vendor/peerjs.min.js"></script>
+    <script defer src="config.js"></script>
+    <script defer src="vendor/supabase.js"></script>
     <script defer src="room-common.js"></script>
     <script defer src="monopoly.js"></script>
   </head>
@@ -33,6 +34,7 @@
           <div class="button-grid">
             <button id="hostBtn" class="primary-btn" type="button">创建房间</button>
             <button id="joinBtn" type="button">加入房间</button>
+            <button id="leaveRoomBtn" type="button" hidden>退出房间</button>
           </div>
           <label>
             房间号
@@ -61,6 +63,10 @@
           <h3>回合</h3>
           <strong id="monopolyTurn">等待开始</strong>
           <button id="rollMonopolyBtn" class="primary-btn" type="button">掷骰子</button>
+          <div id="monopolyBuyActions" class="inline-actions" hidden>
+            <button id="buyPropertyBtn" class="primary-btn" type="button">购买</button>
+            <button id="skipPropertyBtn" type="button">跳过</button>
+          </div>
           <button id="resetMonopolyBtn" type="button">重新开始</button>
           <p id="monopolyLog" class="mini-note">全球国家地产版地图，落到空地会自动买入，落到他人地块则支付租金。</p>
         </section>
@@ -78,7 +84,8 @@
         </header>
 
         <section class="monopoly-layout">
-          <div id="monopolyBoard" class="monopoly-map" aria-label="环球大富翁棋盘">
+          <div class="monopoly-board-wrap">
+            <div id="monopolyBoard" class="monopoly-map" aria-label="环球大富翁棋盘">
             <div class="monopoly-center">
               <p class="eyebrow">World Bank</p>
               <h3 id="monopolyCenterTitle">等待开局</h3>
@@ -89,6 +96,7 @@
                 <span></span>
               </div>
               <div id="monopolyDice" class="monopoly-dice">-</div>
+            </div>
             </div>
           </div>
           <aside class="info-card monopoly-sidecard">

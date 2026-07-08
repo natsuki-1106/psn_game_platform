@@ -756,9 +756,13 @@ canvas {
 
 .monopoly-layout {
   display: grid;
-  grid-template-columns: minmax(760px, 1fr);
+  grid-template-columns: minmax(760px, 1fr) minmax(260px, 340px);
   gap: 22px;
   align-items: start;
+}
+
+.monopoly-board-wrap {
+  overflow-x: auto;
 }
 
 .monopoly-map {
@@ -1273,9 +1277,15 @@ canvas {
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 10px;
-  height: 10px;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
   border-radius: 999px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .owner-mark.red {
@@ -1297,19 +1307,64 @@ canvas {
 .monopoly-cell .piece-row {
   position: absolute;
   right: 4px;
-  bottom: 4px;
+  bottom: 24px;
   left: 4px;
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
+  min-height: 20px;
 }
 
 .monopoly-cell .piece-dot {
-  min-width: 18px;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  font-size: 10px;
+  min-width: 24px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #fff;
+  font-size: 12px;
+  box-shadow: 0 4px 8px rgba(23, 33, 43, 0.26);
+}
+
+.house-row {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  left: 4px;
+  display: flex;
+  gap: 2px;
+  min-height: 17px;
+}
+
+.house-mark {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(23, 33, 43, 0.22);
+}
+
+.house-mark.red,
+.property-chip.red {
+  background: #d63e47;
+}
+
+.house-mark.blue,
+.property-chip.blue {
+  background: #336fd6;
+}
+
+.house-mark.green,
+.property-chip.green {
+  background: #2f9d64;
+}
+
+.house-mark.gold,
+.property-chip.gold {
+  background: #8f6510;
 }
 
 .asset-card {
@@ -1322,6 +1377,21 @@ canvas {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel-soft);
+}
+
+.asset-card .monopoly-property-list {
+  grid-column: 1 / -1;
+}
+
+.property-chip {
+  display: inline-grid;
+  place-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .asset-card small,
@@ -1380,6 +1450,11 @@ canvas {
   color: #fff;
   font-size: 12px;
   font-weight: 800;
+}
+
+.player-token {
+  border: 2px solid #fff;
+  box-shadow: 0 5px 12px rgba(23, 33, 43, 0.28);
 }
 
 .piece-dot.red {
@@ -1633,6 +1708,97 @@ canvas {
   min-height: 72px;
 }
 
+.landlord-table {
+  position: relative;
+  display: grid;
+  min-height: 680px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.08), transparent 34%),
+    linear-gradient(180deg, #1b6f48, #0f4d33);
+  box-shadow: 0 18px 40px rgba(23, 33, 43, 0.14);
+}
+
+.landlord-seats {
+  position: relative;
+  min-height: 620px;
+}
+
+.landlord-center {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: grid;
+  gap: 14px;
+  width: min(480px, calc(100% - 140px));
+  transform: translate(-50%, -50%);
+}
+
+.landlord-center-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.landlord-center-actions .inline-actions {
+  justify-content: center;
+}
+
+.landlord-center-actions button {
+  min-width: 110px;
+}
+
+.landlord-bottom-card {
+  justify-items: center;
+}
+
+.center-play {
+  justify-content: center;
+}
+
+.landlord-seat {
+  position: absolute;
+  width: min(320px, 40%);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.landlord-seat header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.seat-0 {
+  left: 50%;
+  bottom: 0;
+  width: min(720px, calc(100% - 40px));
+  transform: translateX(-50%);
+}
+
+.seat-1 {
+  left: 0;
+  top: 18%;
+}
+
+.seat-2 {
+  right: 0;
+  top: 18%;
+}
+
+.seat-played {
+  min-height: 86px;
+  align-items: center;
+}
+
+.landlord-seat.opponent .card-hand {
+  justify-content: flex-start;
+}
+
+.landlord-seat.opponent .card-back.side {
+  margin-right: -22px;
+}
+
 @media (max-width: 1180px) {
   .lobby-grid-wide {
     grid-template-columns: repeat(2, minmax(260px, 1fr));
@@ -1762,6 +1928,24 @@ canvas {
   .monopoly-map {
     width: 920px;
     min-width: 920px;
+  }
+
+  .landlord-table {
+    min-width: 720px;
+    min-height: 640px;
+    padding: 18px;
+  }
+
+  .landlord-center {
+    width: 360px;
+  }
+
+  .landlord-seat {
+    width: 250px;
+  }
+
+  .seat-0 {
+    width: 640px;
   }
 
   .monopoly-sidecard .stat-grid {

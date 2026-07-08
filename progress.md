@@ -67,3 +67,12 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Replaced Gomoku main page logic with `gomoku-app.js`, a clean UTF-8 implementation that keeps the existing board, replay, and record UI but switches cross-device room sync to Supabase Realtime channels.
 - When `config.js` is not configured, Gomoku now fails loudly with a clear Supabase setup message instead of pretending PeerJS cross-device rooms are stable.
 - Updated `tests/gomoku-smoke.cjs` so local gameplay, replay, and result-panel verification still run without requiring Supabase credentials.
+
+## 2026-07-08 Shared Realtime Rooms + UI Round
+
+- Replaced shared `room-common.js` PeerJS room transport with Supabase Realtime while keeping the existing game-side API shape, then updated `ludo.html`, `monopoly.html`, `checkers.html`, and `landlord.html` to load `config.js` + `vendor/supabase.js`.
+- Added room-entered lock state across shared room panels: after entering a room, create/join inputs are hidden or disabled and a `退出房间` button is shown instead.
+- Tightened `gomoku-app.js` room UX so entering a room hides create/join/local controls, added explicit sidebar `退出房间`, kept result-panel `退出` returning to lobby, and hid the debug `重新开始` button on GitHub Pages.
+- Rebuilt `monopoly.js` as clean UTF-8 and changed property purchase from auto-buy to explicit player choice via `购买 / 跳过`, with center-board status copy, stronger piece tokens, owner/house markers, and side-vs-mobile asset layout hooks.
+- Rebuilt `landlord.js` as clean UTF-8, kept hidden-hand / bidding / robot / hint rules, and moved bidding + play buttons into the center table area with side-player last-play display and standard suit symbols.
+- Updated `tests/gomoku-smoke.cjs` for the new Gomoku room-entered UX and re-ran the full suite with `BASE_URL=http://127.0.0.1:8096`.

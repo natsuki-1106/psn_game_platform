@@ -1,22 +1,6 @@
 (function () {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const CLOUD_PEER_HOST = "0.peerjs.com";
-  const CLOUD_PEER_PORT = 443;
-  const CLOUD_PEER_PATH = "/";
-  const ICE_SERVERS = [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    {
-      urls: [
-        "turn:openrelay.metered.ca:80",
-        "turn:openrelay.metered.ca:443",
-        "turn:openrelay.metered.ca:443?transport=tcp",
-      ],
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-  ];
+  const ROOM_VERSION = 2;
 
   function makeRoomId(prefix) {
     let code = prefix.toUpperCase().slice(0, 2);
@@ -25,69 +9,32 @@
   }
 
   function storageKey(gameKey) {
-    return `linkplay-room-${gameKey}`;
+    return `linkplay-room-${gameKey}-v${ROOM_VERSION}`;
   }
 
   function currentParams() {
     return new URLSearchParams(window.location.search);
   }
 
-  function parseBool(value, fallback) {
-    if (value == null) return fallback;
-    return value !== "false" && value !== "0";
+  function safeJson(value) {
+    return JSON.parse(JSON.stringify(value));
   }
 
-  function preferCloudPeer() {
-    const { protocol, hostname } = window.location;
-    return protocol === "file:" || /\.github\.io$/i.test(hostname);
+  function hasSupabaseConfig() {
+    const config = window.LINKPLAY_SUPABASE || {};
+    return Boolean(window.supabase?.createClient && config.url && config.anonKey);
   }
 
-  function buildIceServers(params) {
-    const iceServers = [...ICE_SERVERS];
-    const turnUrls = (params.get("turnUrls") || "")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-    const turnUsername = params.get("turnUsername") || "";
-    const turnCredential = params.get("turnCredential") || "";
-    if (turnUrls.length && turnUsername && turnCredential) {
-      iceServers.push({ urls: turnUrls, username: turnUsername, credential: turnCredential });
-    }
-    return iceServers;
-  }
-
-  function peerOptions() {
-    const params = currentParams();
-    const useCloud = preferCloudPeer();
-    const host = params.get("peerHost") || (useCloud ? CLOUD_PEER_HOST : window.location.hostname);
-    const port = Number(params.get("peerPort") || (useCloud ? CLOUD_PEER_PORT : window.location.port || (window.location.protocol === "https:" ? 443 : 80)));
-    const path = params.get("peerPath") || (useCloud ? CLOUD_PEER_PATH : "/peerjs");
-    const options = {
-      host,
-      port,
-      path,
-      secure: parseBool(params.get("peerSecure"), useCloud ? true : window.location.protocol === "https:"),
-      config: {
-        iceServers: buildIceServers(params),
-        iceTransportPolicy: parseBool(params.get("forceRelay"), false) ? "relay" : "all",
-      },
-      debug: 1,
-    };
-    const key = params.get("peerKey");
-    if (key) options.key = key;
-    return options;
-  }
-
-  function applyPeerParams(url) {
-    const params = currentParams();
-    ["peerHost", "peerPort", "peerPath", "peerSecure", "peerKey", "turnUrls", "turnUsername", "turnCredential", "forceRelay"].forEach((key) => {
-      const value = params.get(key);
-      if (value) url.searchParams.set(key, value);
+  function createClient() {
+    if (!hasSupabaseConfig()) return null;
+    const config = window.LINKPLAY_SUPABASE;
+    return window.supabase.createClient(config.url, config.anonKey, {
+      realtime: { params: { eventsPerSecond: 8 } },
     });
   }
 
-  function safeJson(value) {
-    return JSON.parse(JSON.stringify(value));
+  function normalizeRoomId(value) {
+    return (value || "").trim().toUpperCase();
   }
 
   window.initRoomPanel = function initRoomPanel({ gameKey, prefix, onRoomChange, onRemoteState, getSnapshot }) {
@@ -98,151 +45,260 @@
     const hostBtn = document.querySelector("#hostBtn");
     const joinBtn = document.querySelector("#joinBtn");
     const copyBtn = document.querySelector("#copyBtn");
-    const state = { roomId: "", role: "none", nickname: "", online: "idle" };
-    const peers = { peer: null, conn: null, conns: [] };
-
-    function roomPeerId(roomId) {
-      return `${gameKey}-${roomId}`.toLowerCase();
-    }
+    const leaveBtn = document.querySelector("#leaveRoomBtn");
+    const state = {
+      roomId: "",
+      role: "none",
+      nickname: "",
+      online: "idle",
+      members: {},
+      sessionId: crypto.randomUUID ? crypto.randomUUID() : `session-${Date.now()}`,
+    };
+    const transport = {
+      client: null,
+      channel: null,
+      connected: false,
+    };
 
     function save() {
-      localStorage.setItem(storageKey(gameKey), JSON.stringify(state));
+      if (!state.roomId) {
+        localStorage.removeItem(storageKey(gameKey));
+        return;
+      }
+      localStorage.setItem(
+        storageKey(gameKey),
+        JSON.stringify({
+          roomId: state.roomId,
+          role: state.role,
+          nickname: state.nickname,
+        }),
+      );
     }
 
-    function statusText() {
-      if (!state.roomId) return "未进房";
-      if (state.online === "error") return state.role === "host" ? "房主 信令失败" : "加入失败";
+    function setButtonsInRoom(inRoom) {
+      if (hostBtn) hostBtn.hidden = inRoom;
+      if (joinBtn) joinBtn.hidden = inRoom;
+      if (leaveBtn) leaveBtn.hidden = !inRoom;
+      if (roomInput) roomInput.disabled = inRoom;
+      if (nicknameInput) nicknameInput.disabled = inRoom;
+    }
+
+    function updateShareLink() {
+      if (!shareInput) return;
+      if (!state.roomId) {
+        shareInput.value = "";
+        return;
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.set("room", state.roomId);
+      shareInput.value = url.toString();
+    }
+
+    function roomLabel() {
+      if (!state.roomId) return "未进入房间";
+      if (!hasSupabaseConfig()) return "需要 Supabase 配置";
+      if (state.online === "error") return "连接失败";
       if (state.online === "connecting") return "连接中";
-      if (state.online === "online") return state.role === "host" ? `房主 ${peers.conns.length}人` : "已联机";
-      return state.role === "host" ? "房主" : "已进房";
+      if (state.online === "online") {
+        return state.role === "host" ? `房主 ${connectionCount()} 人` : "已加入";
+      }
+      return "已进入";
     }
 
     function updateStatus() {
       if (roomStatus) {
-        roomStatus.textContent = statusText();
+        roomStatus.textContent = roomLabel();
         roomStatus.style.color = state.roomId && state.online !== "error" ? "var(--accent)" : "var(--warn)";
       }
       if (roomInput) roomInput.value = state.roomId;
-      if (shareInput && state.roomId) {
-        const url = new URL(window.location.href);
-        url.searchParams.set("room", state.roomId);
-        applyPeerParams(url);
-        shareInput.value = url.toString();
-      }
-      onRoomChange?.({ ...state });
-      window.dispatchEvent(new CustomEvent("linkplay-room-change", { detail: { ...state } }));
+      updateShareLink();
+      setButtonsInRoom(Boolean(state.roomId));
+      onRoomChange?.({
+        ...state,
+        members: Object.values(state.members),
+      });
+      window.dispatchEvent(
+        new CustomEvent("linkplay-room-change", {
+          detail: {
+            ...state,
+            members: Object.values(state.members),
+          },
+        }),
+      );
     }
 
-    function cleanupPeer() {
-      peers.conns.forEach((conn) => conn.close());
-      peers.conns = [];
-      peers.conn?.close();
-      peers.conn = null;
-      peers.peer?.destroy();
-      peers.peer = null;
+    async function send(payload) {
+      if (!transport.channel) return;
+      await transport.channel.send({
+        type: "broadcast",
+        event: "room-event",
+        payload: {
+          ...payload,
+          gameKey,
+          roomId: state.roomId,
+          senderId: state.sessionId,
+          senderRole: state.role,
+          senderName: state.nickname,
+        },
+      });
     }
 
-    function sendSnapshot(conn) {
+    async function publishSnapshot(targetId) {
       const snapshot = getSnapshot?.();
-      if (!snapshot || !conn?.open) return;
-      conn.send({ type: "state", payload: safeJson(snapshot) });
+      if (!snapshot) return;
+      await send({
+        type: "snapshot",
+        targetId,
+        snapshot: safeJson(snapshot),
+      });
+    }
+
+    async function announcePresence() {
+      if (!state.roomId) return;
+      state.members[state.sessionId] = { id: state.sessionId, role: state.role, name: state.nickname };
+      updateStatus();
+      await send({ type: "presence" });
+      if (state.role === "guest") {
+        await send({ type: "request-sync" });
+      }
+    }
+
+    function clearTransport() {
+      if (transport.channel) {
+        transport.channel.unsubscribe();
+      }
+      transport.channel = null;
+      transport.connected = false;
+      if (transport.client) {
+        transport.client.removeAllChannels();
+      }
+      transport.client = null;
+    }
+
+    function clearRoomState() {
+      state.roomId = "";
+      state.role = "none";
+      state.online = "idle";
+      state.members = {};
+      history.replaceState(null, "", `${window.location.pathname}`);
+      save();
+      updateStatus();
+    }
+
+    function receive(payload) {
+      if (!payload || payload.senderId === state.sessionId) return;
+      if (payload.gameKey !== gameKey || payload.roomId !== state.roomId) return;
+
+      if (payload.type === "presence") {
+        state.members[payload.senderId] = {
+          id: payload.senderId,
+          role: payload.senderRole,
+          name: payload.senderName || "玩家",
+        };
+        updateStatus();
+        if (state.role === "host") publishSnapshot(payload.senderId);
+        return;
+      }
+
+      if (payload.type === "request-sync") {
+        if (state.role === "host") publishSnapshot(payload.senderId);
+        return;
+      }
+
+      if (payload.targetId && payload.targetId !== state.sessionId) return;
+
+      if (payload.type === "snapshot" || payload.type === "state") {
+        state.members[payload.senderId] = {
+          id: payload.senderId,
+          role: payload.senderRole,
+          name: payload.senderName || "玩家",
+        };
+        state.online = "online";
+        transport.connected = true;
+        onRemoteState?.(payload.snapshot || payload.payload);
+        updateStatus();
+        return;
+      }
+
+      if (payload.type === "leave") {
+        delete state.members[payload.senderId];
+        updateStatus();
+      }
+    }
+
+    async function connect() {
+      clearTransport();
+      const client = createClient();
+      if (!client) {
+        state.online = "error";
+        updateStatus();
+        return false;
+      }
+      transport.client = client;
+      transport.channel = client.channel(`room:${gameKey}:${state.roomId}`, {
+        config: { broadcast: { self: false, ack: false } },
+      });
+      transport.channel.on("broadcast", { event: "room-event" }, ({ payload }) => receive(payload));
+
+      return new Promise((resolve) => {
+        transport.channel.subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            state.online = "online";
+            transport.connected = true;
+            save();
+            updateStatus();
+            await announcePresence();
+            resolve(true);
+            return;
+          }
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            state.online = "error";
+            transport.connected = false;
+            updateStatus();
+            resolve(false);
+          }
+        });
+      });
+    }
+
+    async function enterRoom(roomId, role) {
+      const nextRoomId = normalizeRoomId(roomId);
+      if (!nextRoomId || state.roomId) return;
+      state.roomId = nextRoomId;
+      state.role = role;
+      state.nickname = nicknameInput?.value.trim() || `玩家${Math.floor(1000 + Math.random() * 9000)}`;
+      state.online = "connecting";
+      state.members = {};
+      const url = new URL(window.location.href);
+      url.searchParams.set("room", state.roomId);
+      history.replaceState(null, "", url);
+      updateStatus();
+      await connect();
+    }
+
+    async function leaveRoom() {
+      if (!state.roomId) return;
+      await send({ type: "leave" });
+      clearTransport();
+      clearRoomState();
     }
 
     function broadcast(payload) {
-      if (!state.roomId) return;
-      const message = { type: "state", payload: safeJson(payload) };
-      if (state.role === "host") {
-        peers.conns.filter((conn) => conn.open).forEach((conn) => conn.send(message));
-      } else if (peers.conn?.open) {
-        peers.conn.send(message);
-      }
+      if (!state.roomId || !transport.connected) return;
+      const message = {
+        type: "state",
+        snapshot: safeJson(payload),
+      };
+      send(message);
     }
 
-    function handleMessage(data, fromConn) {
-      if (!data || data.type !== "state") return;
-      onRemoteState?.(data.payload);
-      if (state.role === "host") {
-        peers.conns.filter((conn) => conn !== fromConn && conn.open).forEach((conn) => conn.send(data));
-      }
-    }
-
-    function attachConn(conn) {
-      conn.on("open", () => {
-        if (state.role === "host") {
-          if (!peers.conns.includes(conn)) peers.conns.push(conn);
-          state.online = "online";
-          sendSnapshot(conn);
-        } else {
-          peers.conn = conn;
-          state.online = "online";
-        }
-        updateStatus();
-      });
-      conn.on("data", (data) => handleMessage(data, conn));
-      conn.on("close", () => {
-        peers.conns = peers.conns.filter((item) => item !== conn);
-        if (peers.conn === conn) peers.conn = null;
-        state.online = state.role === "host" ? "online" : "idle";
-        updateStatus();
-      });
-      conn.on("error", () => {
-        state.online = "error";
-        updateStatus();
-      });
-    }
-
-    function startHost() {
-      if (!window.Peer || !state.roomId) return;
-      cleanupPeer();
-      state.online = "connecting";
-      const peer = new Peer(roomPeerId(state.roomId), peerOptions());
-      peers.peer = peer;
-      peer.on("open", () => {
-        state.online = "online";
-        updateStatus();
-      });
-      peer.on("connection", attachConn);
-      peer.on("error", () => {
-        state.online = "error";
-        updateStatus();
-      });
-    }
-
-    function startGuest() {
-      if (!window.Peer || !state.roomId) return;
-      cleanupPeer();
-      state.online = "connecting";
-      const peer = new Peer(undefined, peerOptions());
-      peers.peer = peer;
-      peer.on("open", () => {
-        attachConn(peer.connect(roomPeerId(state.roomId), { reliable: true }));
-      });
-      peer.on("error", () => {
-        state.online = "error";
-        updateStatus();
-      });
-    }
-
-    function enterRoom(roomId, role) {
-      state.roomId = roomId.trim().toUpperCase();
-      state.role = role;
-      state.nickname = nicknameInput?.value.trim() || "玩家";
-      state.online = "connecting";
-      const url = new URL(window.location.href);
-      url.searchParams.set("room", state.roomId);
-      applyPeerParams(url);
-      history.replaceState(null, "", url);
-      save();
-      updateStatus();
-      if (role === "host") startHost();
-      else startGuest();
+    function connectionCount() {
+      return Math.max(0, Object.keys(state.members).length - 1);
     }
 
     hostBtn?.addEventListener("click", () => enterRoom(makeRoomId(prefix), "host"));
-    joinBtn?.addEventListener("click", () => {
-      if (!roomInput.value.trim()) return;
-      enterRoom(roomInput.value, "guest");
-    });
+    joinBtn?.addEventListener("click", () => enterRoom(roomInput?.value, "guest"));
+    leaveBtn?.addEventListener("click", leaveRoom);
     copyBtn?.addEventListener("click", async () => {
       if (shareInput?.value) await navigator.clipboard.writeText(shareInput.value);
     });
@@ -250,33 +306,36 @@
     nicknameInput.value = localStorage.getItem("linkplay-name") || `玩家${Math.floor(1000 + Math.random() * 9000)}`;
     nicknameInput.addEventListener("change", () => localStorage.setItem("linkplay-name", nicknameInput.value.trim()));
 
-    const roomFromUrl = new URLSearchParams(window.location.search).get("room");
+    const roomFromUrl = normalizeRoomId(currentParams().get("room"));
     const saved = JSON.parse(localStorage.getItem(storageKey(gameKey)) || "null");
-    if (roomFromUrl && saved?.roomId === roomFromUrl.toUpperCase()) {
-      Object.assign(state, saved);
-    } else if (roomFromUrl) {
-      state.roomId = roomFromUrl.toUpperCase();
-      state.role = "guest";
+    if (roomFromUrl) {
+      state.roomId = roomFromUrl;
+      state.role = saved?.roomId === roomFromUrl ? saved.role : "guest";
       state.nickname = nicknameInput.value.trim();
+      state.online = "connecting";
     } else if (saved?.roomId) {
-      Object.assign(state, saved);
+      state.roomId = saved.roomId;
+      state.role = saved.role;
+      state.nickname = saved.nickname || nicknameInput.value.trim();
+      state.online = "connecting";
     }
-    state.online = state.roomId ? "connecting" : "idle";
+
     updateStatus();
-    if (state.roomId && state.role === "host") startHost();
-    if (state.roomId && state.role === "guest") startGuest();
+    if (state.roomId) connect();
 
     return {
       state,
       broadcast,
+      leaveRoom,
       isHost: () => state.role === "host",
       isGuest: () => state.role === "guest",
-      connectionCount: () => (state.role === "host" ? peers.conns.length : peers.conn?.open ? 1 : 0),
+      connectionCount,
       hasRoom: () => Boolean(state.roomId),
       localSeatIndex: () => (state.role === "guest" ? 1 : 0),
       requireHost: () => {
         if (!state.roomId) return "请先创建或加入房间。";
         if (state.role !== "host") return "只有房主可以开始游戏。";
+        if (!hasSupabaseConfig()) return "当前缺少 Supabase 配置。";
         return "";
       },
     };

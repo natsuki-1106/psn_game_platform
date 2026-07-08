@@ -1,7 +1,7 @@
 (function () {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const ROOM_VERSION = 2;
-  const ROOM_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+  const ROOM_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 
   function makeRoomId(prefix) {
     let code = prefix.toUpperCase().slice(0, 2);

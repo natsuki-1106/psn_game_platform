@@ -586,6 +586,7 @@
 
     if (config.key === "reversi") {
       drawCoordinateLabels(geom);
+      drawLastMoveMarker(geom);
     }
 
     if (config.key === "reversi" && canPlay()) {
@@ -596,6 +597,18 @@
         ctx.fill();
       });
     }
+  }
+
+  function drawLastMoveMarker(geom) {
+    const move = state.moves.at(-1);
+    if (!move) return;
+    const cx = geom.x + move.col * geom.cell + geom.cell / 2;
+    const cy = geom.y + move.row * geom.cell + geom.cell / 2;
+    ctx.beginPath();
+    ctx.strokeStyle = move.color === BLACK ? "#f7df73" : "#5d4037";
+    ctx.lineWidth = 4;
+    ctx.arc(cx, cy, geom.cell * 0.12, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   function drawCoordinateLabels(geom) {

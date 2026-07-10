@@ -84,3 +84,10 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Added a shared 10-minute idle room timeout in room-common.js; create/join, sent state, and received state all refresh the timer, and inactive rooms auto-close by leaving the room.
 - Verified with BASE_URL=http://127.0.0.1:8096 npm test; Gomoku now reports transportKind: shared-supabase.
 
+## 2026-07-10 Gomoku Undo Rollback Rule
+
+- Changed Gomoku undo so a player can request undo even after the opponent has already moved; approval rolls the board back to the requester's previous move and removes that move plus every later move.
+- Added per-color undo locks so each newly placed stone can only generate one undo request; the lock resets when that color places a new stone.
+- Added a Gomoku smoke-test scenario for black/white/black followed by white undo, verifying only the first black stone remains and it is white's turn.
+- Verified with `BASE_URL=http://127.0.0.1:8097 npm test`; also inspected `outputs/gomoku-modal.png` and `outputs/gomoku-smoke.png`.
+- Note: the generic develop-web-game client could not run because its skill-directory script could not resolve the project's local `playwright` package, but the repository Playwright smoke tests passed.

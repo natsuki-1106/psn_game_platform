@@ -47,6 +47,7 @@ const state = {
   recordLabel: "新房间",
   gameCounted: false,
   undoRequest: null,
+  undoLocks: { [BLACK]: false, [WHITE]: false },
   room: null,
 };
 
@@ -151,6 +152,7 @@ function roomSnapshot() {
     recordLabel: state.recordLabel,
     gameCounted: state.gameCounted,
     undoRequest: state.undoRequest,
+    undoLocks: state.undoLocks,
   };
 }
 
@@ -166,6 +168,7 @@ function applyRoomSnapshot(snapshot) {
   state.recordLabel = snapshot.recordLabel || state.recordLabel;
   state.gameCounted = Boolean(snapshot.gameCounted);
   state.undoRequest = snapshot.undoRequest || null;
+  state.undoLocks = snapshot.undoLocks || { [BLACK]: false, [WHITE]: false };
   if (state.winner) showResultModal();
   else hideResultModal();
 }
@@ -184,6 +187,7 @@ function resetBoard(announce = true, message = "黑棋先手") {
   state.hover = null;
   state.gameCounted = false;
   state.undoRequest = null;
+  state.undoLocks = { [BLACK]: false, [WHITE]: false };
   state.message = message;
   hideResultModal();
   render();
@@ -217,7 +221,16 @@ function updateUndoPanel() {
     undoRequestText.textContent = `${colorName(request.requesterColor)}请求悔一步`;
   }
   const ownPending = request && request.requesterColor === myColor;
-  undoBtn.disabled = Boolean(request) || state.winner || !state.moves.length || state.mode === "idle";
+  const requesterColor = state.mode === "local" ? state.turn : myColor;
+  const hasOwnMove = requesterColor ? state.moves.some((move) => move.color === requesterColor) : false;
+  undoBtn.disabled =
+    Boolean(request) ||
+    state.winner ||
+    !state.moves.length ||
+    state.mode === "idle" ||
+    !requesterColor ||
+    !hasOwnMove ||
+    Boolean(state.undoLocks[requesterColor]);
   if (ownPending) {
     undoBtn.textContent = "等待对方同意";
   } else {
@@ -394,6 +407,7 @@ function placeStone(row, col, color, shouldBroadcast = true) {
   if (state.board[row][col] !== EMPTY || state.winner || state.undoRequest) return false;
   state.board[row][col] = color;
   state.moves.push({ row, col, color, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+  state.undoLocks[color] = false;
   if (checkWinner(row, col, color)) {
     finishGame(color);
   } else {
@@ -405,10 +419,14 @@ function placeStone(row, col, color, shouldBroadcast = true) {
   return true;
 }
 
-function removeMove(moveIndex) {
-  const [move] = state.moves.splice(moveIndex, 1);
+function removeMovesFrom(moveIndex) {
+  const removed = state.moves.splice(moveIndex);
+  if (!removed.length) return false;
+  removed.forEach((move) => {
+    state.board[move.row][move.col] = EMPTY;
+  });
+  const move = removed[0];
   if (!move) return false;
-  state.board[move.row][move.col] = EMPTY;
   state.turn = move.color;
   state.winner = EMPTY;
   state.message = `${colorName(move.color)}已悔一步，轮到${colorName(state.turn)}`;
@@ -419,21 +437,29 @@ function removeMove(moveIndex) {
 
 function requestUndo() {
   if (!state.moves.length || state.winner || state.undoRequest) return;
-  const requesterColor = state.mode === "local" ? state.moves.at(-1).color : ownColor();
-  const moveIndex = state.moves.length - 1;
+  const requesterColor = state.mode === "local" ? state.turn : ownColor();
+  if (!requesterColor) return;
+  if (state.undoLocks[requesterColor]) {
+    state.message = "每次落子后只能申请一次悔棋";
+    render();
+    return;
+  }
+  const moveIndex = state.moves.findLastIndex((move) => move.color === requesterColor);
   const move = state.moves[moveIndex];
-  if (!move || move.color !== requesterColor) {
+  if (moveIndex < 0 || !move) {
     state.message = "只能申请悔自己刚下的最后一步";
     render();
     return;
   }
 
   if (state.mode === "local") {
-    removeMove(moveIndex);
+    state.undoLocks[requesterColor] = true;
+    removeMovesFrom(moveIndex);
     render();
     return;
   }
 
+  state.undoLocks[requesterColor] = true;
   state.undoRequest = {
     requesterColor,
     moveIndex,
@@ -454,7 +480,7 @@ function resolveUndoRequest(approved) {
   if (approved) {
     const move = state.moves[request.moveIndex];
     if (move && move.color === request.requesterColor) {
-      removeMove(request.moveIndex);
+      removeMovesFrom(request.moveIndex);
     } else {
       state.undoRequest = null;
       state.message = "悔棋失败，棋局已变化";
@@ -523,6 +549,7 @@ window.render_game_to_text = () =>
     recordLabel: state.recordLabel,
     modalOpen: !resultModal.hidden,
     undoRequest: state.undoRequest,
+    undoLocks: state.undoLocks,
     moves: state.moves.map((move) => ({ row: move.row, col: move.col, color: colorName(move.color), id: move.id || null })),
     message: state.message,
     connectionStatus: connectionStatus.textContent,

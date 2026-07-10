@@ -42,6 +42,19 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   };
 
   for (const [row, col] of [
+    [3, 3],
+    [3, 4],
+    [4, 3],
+  ]) {
+    const point = cellPoint(row, col);
+    await page.mouse.click(point.x, point.y);
+    await page.waitForTimeout(50);
+  }
+  await page.click("#undoBtn");
+  const undoRollbackState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  await page.click("#restartBtn");
+
+  for (const [row, col] of [
     [7, 7],
     [7, 8],
     [8, 7],
@@ -92,7 +105,7 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.screenshot({ path: "outputs/gomoku-smoke.png", fullPage: true });
   await browser.close();
 
-  console.log(JSON.stringify({ initialState, restoredState, controlsAfterJoin, status, modalText, wonState, replayState, secondWonState, lobbyTitle, errors }, null, 2));
+  console.log(JSON.stringify({ initialState, restoredState, controlsAfterJoin, undoRollbackState, status, modalText, wonState, replayState, secondWonState, lobbyTitle, errors }, null, 2));
 
   if (errors.length) process.exit(1);
   if (!initialState.supabaseConfigured) {
@@ -102,6 +115,8 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
     if (restoredState.roomId !== initialState.roomId || restoredState.mode !== "online") process.exit(1);
   }
   if (!controlsAfterJoin.hostHidden || !controlsAfterJoin.joinHidden || !controlsAfterJoin.localHidden || controlsAfterJoin.leaveHidden) process.exit(1);
+  if (undoRollbackState.moves.length !== 1 || undoRollbackState.moves[0].row !== 3 || undoRollbackState.moves[0].col !== 3) process.exit(1);
+  if (undoRollbackState.turn !== "白棋") process.exit(1);
   if (wonState.winner !== "黑棋") process.exit(1);
   if (!wonState.modalOpen) process.exit(1);
   if (wonState.record.total !== 1 || wonState.record.black !== 1 || wonState.record.white !== 0) process.exit(1);

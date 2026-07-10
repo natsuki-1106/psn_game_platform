@@ -122,6 +122,8 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   if (wonState.record.total !== 1 || wonState.record.black !== 1 || wonState.record.white !== 0) process.exit(1);
   if (replayState.winner !== null || replayState.moves.length !== 0) process.exit(1);
   if (replayState.record.total !== 1 || replayState.record.black !== 1) process.exit(1);
+  if (replayState.players.black !== "本地玩家 B" || replayState.players.white !== "本地玩家 A") process.exit(1);
+  if (wonState.moves[0].point !== "H8") process.exit(1);
   if (secondWonState.record.total !== 2 || secondWonState.record.black !== 2) process.exit(1);
   if (lobbyTitle !== "LinkPlay") process.exit(1);
 })();

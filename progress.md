@@ -100,3 +100,11 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Added `tests/grid-games-smoke.cjs` and included it in `npm test`; verified with `BASE_URL=http://127.0.0.1:8098 npm test` plus `node tests/grid-games-smoke.cjs` after the final card-art CSS tweak.
 - Inspected screenshots: `outputs/lobby-new-games.png`, `outputs/tictactoe-board.png`, `outputs/reversi-board.png`, and `outputs/grid-games-smoke.png`.
 - Updated Reversi from green to Gomoku-style wood board art per feedback; verified with `node tests/grid-games-smoke.cjs` and inspected `outputs/reversi-wood-board.png`.
+
+## 2026-07-11 Auto Side Swap And Coordinates
+
+- Added automatic next-game side swapping to Gomoku, Tic Tac Toe, Reversi, and Connect Four; the current finished board stays unchanged, and the swap happens when the next game starts.
+- Online rooms now track which side the host owns, so host/guest colors can swap while room roles stay stable.
+- Added standard letter+number coordinates to Gomoku and Reversi board rendering and move records.
+- Reversi now shows current black/white piece counts in the top score strip and exposes them in `render_game_to_text`.
+- Verified with `BASE_URL=http://127.0.0.1:8099 npm test`; inspected `outputs/gomoku-modal.png`, `outputs/grid-games-smoke.png`, and `outputs/reversi-coordinates-counts.png`.

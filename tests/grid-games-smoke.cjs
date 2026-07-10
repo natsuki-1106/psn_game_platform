@@ -46,6 +46,8 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
     await playCell(row, col, 3, 3);
   }
   const tictactoeState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  await page.click("#playAgainBtn");
+  const tictactoeReplayState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 
   await page.goto(`${baseUrl}/reversi.html`, { waitUntil: "networkidle" });
   await page.click("#localBtn");
@@ -62,11 +64,13 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.screenshot({ path: "outputs/grid-games-smoke.png", fullPage: true });
   await browser.close();
 
-  console.log(JSON.stringify({ lobbyLinks, tictactoeState, reversiState, connect4State, errors }, null, 2));
+  console.log(JSON.stringify({ lobbyLinks, tictactoeState, tictactoeReplayState, reversiState, connect4State, errors }, null, 2));
 
   if (errors.length) process.exit(1);
   if (lobbyLinks[0] !== "gomoku.html" || lobbyLinks[1] !== "tictactoe.html" || lobbyLinks[2] !== "reversi.html" || lobbyLinks[3] !== "connect4.html") process.exit(1);
   if (tictactoeState.game !== "tictactoe" || tictactoeState.winner !== "先手" || tictactoeState.record.black !== 1) process.exit(1);
+  if (tictactoeReplayState.players.black !== "本地玩家 B" || tictactoeReplayState.players.white !== "本地玩家 A") process.exit(1);
   if (reversiState.game !== "reversi" || reversiState.moves.length !== 1 || reversiState.board[3][3] !== 1) process.exit(1);
+  if (reversiState.moves[0].point !== "D3" || reversiState.pieceCounts.black !== 4 || reversiState.pieceCounts.white !== 1) process.exit(1);
   if (connect4State.game !== "connect4" || connect4State.winner !== "红方" || connect4State.record.black !== 1) process.exit(1);
 })();

@@ -88,6 +88,8 @@
     record: { total: 0, black: 0, white: 0, draw: 0 },
     recordLabel: "新房间",
     gameCounted: false,
+    hostColor: BLACK,
+    swapAfterGame: false,
     message: "创建房间、加入房间或本地对战后开始",
     legalMoves: [],
     room: null,
@@ -119,7 +121,6 @@
       }
 
       state.mode = "online";
-      state.role = room.role === "host" ? "black" : "white";
       state.roomId = room.roomId;
       if (room.role === "host") {
         state.players.black = room.nickname || `${config.labels.black}玩家`;
@@ -131,6 +132,8 @@
         if (!state.started) state.message = "已加入房间，等待房主开始";
       }
       roomStatus.textContent = room.online === "online" ? `房间 ${room.roomId}` : "连接中";
+      reconcileOnlineSeatNames(room);
+      syncRoleFromSeat();
       updateRoomControls();
       render();
     },
@@ -144,10 +147,45 @@
     return color === BLACK ? config.labels.black : config.labels.white;
   }
 
+  function colorKey(color) {
+    return color === BLACK ? "black" : "white";
+  }
+
+  function oppositeColor(color) {
+    return color === BLACK ? WHITE : BLACK;
+  }
+
   function ownColor() {
+    if (state.mode === "online") {
+      if (roomApi?.isHost?.()) return state.hostColor;
+      if (roomApi?.isGuest?.()) return oppositeColor(state.hostColor);
+    }
     if (state.role === "black") return BLACK;
     if (state.role === "white") return WHITE;
     return EMPTY;
+  }
+
+  function syncRoleFromSeat() {
+    const color = ownColor();
+    if (color === BLACK) state.role = "black";
+    if (color === WHITE) state.role = "white";
+  }
+
+  function reconcileOnlineSeatNames(room) {
+    if (!room?.roomId) return;
+    const hostKey = colorKey(state.hostColor);
+    const guestKey = colorKey(oppositeColor(state.hostColor));
+    if (room.role === "host") {
+      const hostName = room.nickname || `${config.labels[hostKey]}鐜╁`;
+      const guestName = state.players[guestKey] && state.players[guestKey] !== "绛夊緟" ? state.players[guestKey] : "绛夊緟鍔犲叆";
+      state.players[hostKey] = hostName;
+      state.players[guestKey] = guestName;
+    } else {
+      const guestName = room.nickname || `${config.labels[guestKey]}鐜╁`;
+      const hostName = state.players[hostKey] && state.players[hostKey] !== "绛夊緟" ? state.players[hostKey] : "鎴夸富";
+      state.players[hostKey] = hostName;
+      state.players[guestKey] = guestName;
+    }
   }
 
   function roomSnapshot() {
@@ -162,6 +200,8 @@
       record: state.record,
       recordLabel: state.recordLabel,
       gameCounted: state.gameCounted,
+      hostColor: state.hostColor,
+      swapAfterGame: state.swapAfterGame,
       message: state.message,
     };
   }
@@ -178,7 +218,10 @@
     state.record = snapshot.record || state.record;
     state.recordLabel = snapshot.recordLabel || state.recordLabel;
     state.gameCounted = Boolean(snapshot.gameCounted);
+    state.hostColor = snapshot.hostColor || BLACK;
+    state.swapAfterGame = Boolean(snapshot.swapAfterGame);
     state.message = snapshot.message || state.message;
+    syncRoleFromSeat();
     updateLegalMoves();
     if (state.winner || state.draw) showResultModal();
     else hideResultModal();
@@ -197,6 +240,7 @@
   }
 
   function setupBoard() {
+    applyAutoSideSwap();
     state.board = createBoard();
     if (config.key === "reversi") {
       const midR = config.rows / 2 - 1;
@@ -241,6 +285,8 @@
     state.mode = "local";
     state.role = "both";
     state.roomId = "local";
+    state.hostColor = BLACK;
+    state.swapAfterGame = false;
     state.players = { black: "本地玩家 A", white: "本地玩家 B" };
     resetRecord("本地房间");
     setupBoard();
@@ -250,6 +296,16 @@
   function updateRoomControls() {
     const inOnlineRoom = state.mode === "online" && Boolean(state.roomId);
     if (localBtn) localBtn.hidden = inOnlineRoom;
+  }
+
+  function applyAutoSideSwap() {
+    if (!state.swapAfterGame) return;
+    state.hostColor = oppositeColor(state.hostColor);
+    const black = state.players.black;
+    state.players.black = state.players.white;
+    state.players.white = black;
+    state.swapAfterGame = false;
+    syncRoleFromSeat();
   }
 
   function inBounds(row, col) {
@@ -327,6 +383,10 @@
     );
   }
 
+  function cellLabel(row, col) {
+    return `${String.fromCharCode(65 + col)}${row + 1}`;
+  }
+
   function finishGame(winner, message) {
     state.winner = winner;
     state.draw = !winner;
@@ -337,6 +397,7 @@
       else if (winner === WHITE) state.record.white += 1;
       else state.record.draw += 1;
       state.gameCounted = true;
+      state.swapAfterGame = true;
     }
     showResultModal();
   }
@@ -523,6 +584,10 @@
       });
     }
 
+    if (config.key === "reversi") {
+      drawCoordinateLabels(geom);
+    }
+
     if (config.key === "reversi" && canPlay()) {
       ctx.fillStyle = "rgba(255, 255, 255, 0.36)";
       state.legalMoves.forEach(({ row, col }) => {
@@ -530,6 +595,23 @@
         ctx.arc(geom.x + col * geom.cell + geom.cell / 2, geom.y + row * geom.cell + geom.cell / 2, geom.cell * 0.12, 0, Math.PI * 2);
         ctx.fill();
       });
+    }
+  }
+
+  function drawCoordinateLabels(geom) {
+    ctx.fillStyle = "rgba(42, 28, 10, 0.78)";
+    ctx.font = "700 17px Inter, Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (let col = 0; col < config.cols; col += 1) {
+      const x = geom.x + col * geom.cell + geom.cell / 2;
+      ctx.fillText(String.fromCharCode(65 + col), x, geom.y - 20);
+      ctx.fillText(String.fromCharCode(65 + col), x, geom.y + geom.height + 20);
+    }
+    for (let row = 0; row < config.rows; row += 1) {
+      const y = geom.y + row * geom.cell + geom.cell / 2;
+      ctx.fillText(String(row + 1), geom.x - 22, y);
+      ctx.fillText(String(row + 1), geom.x + geom.width + 22, y);
     }
   }
 
@@ -568,8 +650,11 @@
   }
 
   function renderStatus() {
-    blackPlayer.textContent = `${config.labels.black}：${state.players.black}`;
-    whitePlayer.textContent = `${config.labels.white}：${state.players.white}`;
+    const pieces = countPieces();
+    const blackCount = config.key === "reversi" ? `（${pieces.black}）` : "";
+    const whiteCount = config.key === "reversi" ? `（${pieces.white}）` : "";
+    blackPlayer.textContent = `${config.labels.black}：${state.players.black}${blackCount}`;
+    whitePlayer.textContent = `${config.labels.white}：${state.players.white}${whiteCount}`;
     recordSession.textContent = state.recordLabel;
     totalGames.textContent = state.record.total;
     blackWins.textContent = state.record.black;
@@ -586,7 +671,8 @@
     state.moves.slice(-18).forEach((move, index) => {
       const item = document.createElement("li");
       const extra = move.flips ? `，翻转 ${move.flips}` : "";
-      item.textContent = `${Math.max(0, state.moves.length - 18) + index + 1}. ${colorName(move.color)} (${move.row + 1}, ${move.col + 1})${extra}`;
+      const point = config.key === "reversi" ? cellLabel(move.row, move.col) : `${move.row + 1}, ${move.col + 1}`;
+      item.textContent = `${Math.max(0, state.moves.length - 18) + index + 1}. ${colorName(move.color)} (${point})${extra}`;
       moveList.appendChild(item);
     });
   }
@@ -636,7 +722,13 @@
       rows: config.rows,
       cols: config.cols,
       board: state.board,
-      moves: state.moves,
+      hostColor: colorName(state.hostColor),
+      swapAfterGame: state.swapAfterGame,
+      pieceCounts: config.key === "reversi" ? countPieces() : null,
+      moves: state.moves.map((move) => ({
+        ...move,
+        point: config.key === "reversi" ? cellLabel(move.row, move.col) : `${move.row + 1}, ${move.col + 1}`,
+      })),
       turn: colorName(state.turn),
       winner: state.winner ? colorName(state.winner) : null,
       draw: state.draw,

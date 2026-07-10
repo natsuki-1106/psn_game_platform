@@ -48,6 +48,8 @@ const state = {
   gameCounted: false,
   undoRequest: null,
   undoLocks: { [BLACK]: false, [WHITE]: false },
+  hostColor: BLACK,
+  swapAfterGame: false,
   room: null,
 };
 
@@ -88,6 +90,8 @@ roomApi = window.initRoomPanel({
       if (!state.moves.length && !state.winner) state.message = "已加入房间，等待黑棋落子";
     }
     setStatus(room.online === "online" ? (room.role === "host" ? "等待加入" : "已加入") : "连接中", room.online !== "error");
+    reconcileOnlineSeatNames(room);
+    syncRoleFromSeat();
     updateRoomControls();
     render();
   },
@@ -101,10 +105,50 @@ function colorName(color) {
   return color === BLACK ? "黑棋" : "白棋";
 }
 
+function colorKey(color) {
+  return color === BLACK ? "black" : "white";
+}
+
+function oppositeColor(color) {
+  return color === BLACK ? WHITE : BLACK;
+}
+
 function ownColor() {
+  if (state.mode === "online") {
+    if (roomApi?.isHost?.()) return state.hostColor;
+    if (roomApi?.isGuest?.()) return oppositeColor(state.hostColor);
+  }
   if (state.role === "black") return BLACK;
   if (state.role === "white") return WHITE;
   return EMPTY;
+}
+
+function syncRoleFromSeat() {
+  const color = ownColor();
+  if (color === BLACK) state.role = "black";
+  if (color === WHITE) state.role = "white";
+}
+
+function reconcileOnlineSeatNames(room) {
+  if (!room?.roomId) return;
+  const hostKey = colorKey(state.hostColor);
+  const guestKey = colorKey(oppositeColor(state.hostColor));
+  if (room.role === "host") {
+    const hostName = room.nickname || `${colorName(state.hostColor)}玩家`;
+    const guestName = state.players[guestKey] && state.players[guestKey] !== "等待" ? state.players[guestKey] : "等待加入";
+    state.players[hostKey] = hostName;
+    state.players[guestKey] = guestName;
+  } else {
+    const guestColor = oppositeColor(state.hostColor);
+    const guestName = room.nickname || `${colorName(guestColor)}玩家`;
+    const hostName = state.players[hostKey] && state.players[hostKey] !== "等待" ? state.players[hostKey] : "房主";
+    state.players[hostKey] = hostName;
+    state.players[guestKey] = guestName;
+  }
+}
+
+function cellLabel(row, col) {
+  return `${String.fromCharCode(65 + col)}${row + 1}`;
 }
 
 function setStatus(text, connected = false) {
@@ -153,6 +197,8 @@ function roomSnapshot() {
     gameCounted: state.gameCounted,
     undoRequest: state.undoRequest,
     undoLocks: state.undoLocks,
+    hostColor: state.hostColor,
+    swapAfterGame: state.swapAfterGame,
   };
 }
 
@@ -169,6 +215,9 @@ function applyRoomSnapshot(snapshot) {
   state.gameCounted = Boolean(snapshot.gameCounted);
   state.undoRequest = snapshot.undoRequest || null;
   state.undoLocks = snapshot.undoLocks || { [BLACK]: false, [WHITE]: false };
+  state.hostColor = snapshot.hostColor || BLACK;
+  state.swapAfterGame = Boolean(snapshot.swapAfterGame);
+  syncRoleFromSeat();
   if (state.winner) showResultModal();
   else hideResultModal();
 }
@@ -180,6 +229,7 @@ function broadcastSnapshot() {
 }
 
 function resetBoard(announce = true, message = "黑棋先手") {
+  applyAutoSideSwap();
   state.board = createBoard();
   state.moves = [];
   state.turn = BLACK;
@@ -199,6 +249,8 @@ function startLocal() {
   state.mode = "local";
   state.role = "both";
   state.roomId = "local";
+  state.hostColor = BLACK;
+  state.swapAfterGame = false;
   state.players = { black: "本地玩家 A", white: "本地玩家 B" };
   resetRoomRecord("本地房间");
   setStatus("本地对战", true);
@@ -210,6 +262,16 @@ function updateRoomControls() {
   const inOnlineRoom = state.mode === "online" && Boolean(state.roomId);
   if (localBtn) localBtn.hidden = inOnlineRoom;
   if (restartBtn) restartBtn.hidden = isGithubPages();
+}
+
+function applyAutoSideSwap() {
+  if (!state.swapAfterGame) return;
+  state.hostColor = oppositeColor(state.hostColor);
+  const black = state.players.black;
+  state.players.black = state.players.white;
+  state.players.white = black;
+  state.swapAfterGame = false;
+  syncRoleFromSeat();
 }
 
 function updateUndoPanel() {
@@ -257,7 +319,7 @@ function updateMoves() {
   moveList.innerHTML = "";
   state.moves.forEach((move, index) => {
     const item = document.createElement("li");
-    item.textContent = `${index + 1}. ${colorName(move.color)} (${move.row + 1}, ${move.col + 1})`;
+    item.textContent = `${index + 1}. ${colorName(move.color)} (${cellLabel(move.row, move.col)})`;
     moveList.appendChild(item);
   });
 }
@@ -284,6 +346,8 @@ function renderBoard() {
     ctx.lineTo(pos, canvas.height - pad);
     ctx.stroke();
   }
+
+  drawCoordinateLabels(pad, gap);
 
   [[3, 3], [3, 11], [7, 7], [11, 3], [11, 11]].forEach(([row, col]) => {
     ctx.beginPath();
@@ -319,6 +383,25 @@ function renderBoard() {
       ctx.stroke();
     }
   });
+}
+
+function drawCoordinateLabels(pad, gap) {
+  ctx.fillStyle = "rgba(42, 28, 10, 0.78)";
+  ctx.font = "700 16px Inter, Segoe UI, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (let col = 0; col < BOARD_SIZE; col += 1) {
+    const x = pad + col * gap;
+    const label = String.fromCharCode(65 + col);
+    ctx.fillText(label, x, pad - 22);
+    ctx.fillText(label, x, canvas.height - pad + 22);
+  }
+  for (let row = 0; row < BOARD_SIZE; row += 1) {
+    const y = pad + row * gap;
+    const label = String(row + 1);
+    ctx.fillText(label, pad - 24, y);
+    ctx.fillText(label, canvas.width - pad + 24, y);
+  }
 }
 
 function renderStatus() {
@@ -399,6 +482,7 @@ function finishGame(color) {
     if (color === BLACK) state.record.black += 1;
     if (color === WHITE) state.record.white += 1;
     state.gameCounted = true;
+    state.swapAfterGame = true;
   }
   showResultModal();
 }
@@ -550,7 +634,9 @@ window.render_game_to_text = () =>
     modalOpen: !resultModal.hidden,
     undoRequest: state.undoRequest,
     undoLocks: state.undoLocks,
-    moves: state.moves.map((move) => ({ row: move.row, col: move.col, color: colorName(move.color), id: move.id || null })),
+    hostColor: colorName(state.hostColor),
+    swapAfterGame: state.swapAfterGame,
+    moves: state.moves.map((move) => ({ row: move.row, col: move.col, point: cellLabel(move.row, move.col), color: colorName(move.color), id: move.id || null })),
     message: state.message,
     connectionStatus: connectionStatus.textContent,
     peerId: roomApi?.state?.sessionId || "",

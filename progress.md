@@ -91,3 +91,12 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Added a Gomoku smoke-test scenario for black/white/black followed by white undo, verifying only the first black stone remains and it is white's turn.
 - Verified with `BASE_URL=http://127.0.0.1:8097 npm test`; also inspected `outputs/gomoku-modal.png` and `outputs/gomoku-smoke.png`.
 - Note: the generic develop-web-game client could not run because its skill-directory script could not resolve the project's local `playwright` package, but the repository Playwright smoke tests passed.
+
+## 2026-07-10 New Grid Board Games
+
+- Added Tic Tac Toe, Reversi, and Connect Four as new room-capable games placed immediately after Gomoku in the lobby.
+- Implemented shared `grid-game.js` for local play, Supabase room snapshots, turn handling, win/draw detection, records, replay, and lobby exit.
+- Added visual lobby cards and canvas board styling for all three games; Reversi shows legal move hints and Connect Four drops pieces by column.
+- Added `tests/grid-games-smoke.cjs` and included it in `npm test`; verified with `BASE_URL=http://127.0.0.1:8098 npm test` plus `node tests/grid-games-smoke.cjs` after the final card-art CSS tweak.
+- Inspected screenshots: `outputs/lobby-new-games.png`, `outputs/tictactoe-board.png`, `outputs/reversi-board.png`, and `outputs/grid-games-smoke.png`.
+- Updated Reversi from green to Gomoku-style wood board art per feedback; verified with `node tests/grid-games-smoke.cjs` and inspected `outputs/reversi-wood-board.png`.

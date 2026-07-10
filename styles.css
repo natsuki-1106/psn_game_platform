@@ -191,6 +191,75 @@ label {
   top: 66%;
 }
 
+.tictactoe-art {
+  background:
+    linear-gradient(90deg, transparent 31%, rgba(68, 45, 17, 0.5) 31%, rgba(68, 45, 17, 0.5) 35%, transparent 35%, transparent 65%, rgba(68, 45, 17, 0.5) 65%, rgba(68, 45, 17, 0.5) 69%, transparent 69%),
+    linear-gradient(transparent 31%, rgba(68, 45, 17, 0.5) 31%, rgba(68, 45, 17, 0.5) 35%, transparent 35%, transparent 65%, rgba(68, 45, 17, 0.5) 65%, rgba(68, 45, 17, 0.5) 69%, transparent 69%),
+    linear-gradient(135deg, #f2cb7d, #d69d4f);
+}
+
+.tictactoe-art span {
+  position: absolute;
+}
+
+.tictactoe-art span:nth-child(1),
+.tictactoe-art span:nth-child(3) {
+  width: 54px;
+  height: 54px;
+}
+
+.tictactoe-art span:nth-child(1)::before,
+.tictactoe-art span:nth-child(1)::after,
+.tictactoe-art span:nth-child(3)::before,
+.tictactoe-art span:nth-child(3)::after {
+  content: "";
+  position: absolute;
+  left: 23px;
+  top: -4px;
+  width: 8px;
+  height: 62px;
+  border-radius: 8px;
+  background: #17212b;
+}
+
+.tictactoe-art span:nth-child(1)::before,
+.tictactoe-art span:nth-child(3)::before {
+  transform: rotate(45deg);
+}
+
+.tictactoe-art span:nth-child(1)::after,
+.tictactoe-art span:nth-child(3)::after {
+  transform: rotate(-45deg);
+}
+
+.tictactoe-art span:nth-child(2),
+.tictactoe-art span:nth-child(4) {
+  width: 58px;
+  height: 58px;
+  border: 8px solid #f8fafc;
+  border-radius: 50%;
+}
+
+.tictactoe-art span:nth-child(1) {
+  left: 22%;
+  top: 24%;
+}
+
+.tictactoe-art span:nth-child(2) {
+  right: 22%;
+  top: 24%;
+}
+
+.tictactoe-art span:nth-child(3) {
+  left: 42%;
+  bottom: 18%;
+}
+
+.tictactoe-art span:nth-child(4) {
+  left: 22%;
+  bottom: 18%;
+}
+
 .placeholder-art {
   color: #7b8796;
   background: #edf1f6;
@@ -201,8 +270,90 @@ label {
 .monopoly-art,
 .ludo-art,
 .checkers-art,
-.landlord-art {
+.landlord-art,
+.reversi-art,
+.connect4-art {
   background: linear-gradient(135deg, #eef3f9, #dbe5f0);
+}
+
+.reversi-art {
+  background:
+    linear-gradient(rgba(75, 49, 22, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75, 49, 22, 0.28) 1px, transparent 1px),
+    linear-gradient(135deg, #f0c984, #c9904d);
+  background-size:
+    42px 42px,
+    42px 42px,
+    auto;
+}
+
+.reversi-art .disc {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  box-shadow: 0 8px 18px rgba(23, 33, 43, 0.24);
+}
+
+.reversi-art .disc.dark {
+  left: 34%;
+  top: 30%;
+  background: radial-gradient(circle at 32% 28%, #596371, #111821);
+}
+
+.reversi-art .disc.light {
+  right: 34%;
+  top: 30%;
+  background: radial-gradient(circle at 32% 28%, #ffffff, #dfe4ec);
+}
+
+.reversi-art .disc.small {
+  top: 56%;
+}
+
+.connect4-art {
+  display: block;
+  background:
+    radial-gradient(circle, #e9eef5 0 15px, transparent 16px) 10px 12px / 45px 38px,
+    #1557a3;
+}
+
+.connect4-art span {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 3px 8px rgba(12, 35, 70, 0.24),
+    0 6px 12px rgba(23, 33, 43, 0.18);
+}
+
+.connect4-art span:nth-child(1) {
+  left: 22%;
+  bottom: 20%;
+}
+
+.connect4-art span:nth-child(2) {
+  left: 34%;
+  bottom: 20%;
+}
+
+.connect4-art span:nth-child(3) {
+  left: 22%;
+  bottom: 38%;
+}
+
+.connect4-art span:nth-child(4) {
+  left: 46%;
+  bottom: 20%;
+}
+
+.connect4-art span.red {
+  background: radial-gradient(circle at 32% 28%, #ff8e8a, #d84242);
+}
+
+.connect4-art span.gold {
+  background: radial-gradient(circle at 32% 28%, #fff3a8, #f2c94c);
 }
 
 .monopoly-art .chip,
@@ -557,6 +708,22 @@ label {
   box-shadow: var(--shadow);
   overflow: hidden;
   background: #d9ae72;
+}
+
+.grid-canvas-wrap {
+  background: linear-gradient(135deg, #f1c978, #d69d4f);
+}
+
+.grid-canvas-wrap.reversi-wrap {
+  background: linear-gradient(135deg, #f0c984, #c9904d);
+}
+
+.grid-canvas-wrap.connect4-wrap {
+  background: #1557a3;
+}
+
+.grid-game-shell .match-panel {
+  min-width: 0;
 }
 
 canvas {

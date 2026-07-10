@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/lobby-smoke.cjs && node tests/gomoku-smoke.cjs && node tests/games-smoke.cjs"
+    "test": "node tests/lobby-smoke.cjs && node tests/gomoku-smoke.cjs && node tests/games-smoke.cjs && node tests/grid-games-smoke.cjs"
   },
   "keywords": [],
   "author": "",

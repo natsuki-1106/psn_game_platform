@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkPlay 黑白棋</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="config.js"></script>
+    <script defer src="vendor/supabase.js"></script>
+    <script defer src="room-common.js"></script>
+    <script defer src="grid-game.js"></script>
+  </head>
+  <body data-grid-game="reversi">
+    <div class="app-shell grid-game-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">LP</div>
+          <div>
+            <h1>黑白棋</h1>
+            <p>8x8 翻转控盘</p>
+          </div>
+        </div>
+        <a class="back-link" href="index.html">返回游戏大厅</a>
+        <section class="connection-panel" aria-label="房间面板">
+          <div class="panel-title">
+            <h2>房间</h2>
+            <span id="roomStatus">未进入房间</span>
+          </div>
+          <label>昵称<input id="nicknameInput" maxlength="16" autocomplete="off" /></label>
+          <div class="button-grid">
+            <button id="hostBtn" class="primary-btn" type="button">创建房间</button>
+            <button id="localBtn" type="button">本地对战</button>
+            <button id="leaveRoomBtn" type="button" hidden>退出房间</button>
+          </div>
+          <label>房间号<input id="roomInput" maxlength="16" autocomplete="off" placeholder="输入好友的房间号" /></label>
+          <button id="joinBtn" type="button">加入房间</button>
+          <div class="share-box">
+            <input id="shareInput" readonly placeholder="创建房间后生成邀请链接" />
+            <button id="copyBtn" type="button">复制</button>
+          </div>
+        </section>
+      </aside>
+      <main class="game-stage">
+        <header class="stage-header">
+          <div>
+            <p class="eyebrow">Reversi Board</p>
+            <h2>黑白棋</h2>
+          </div>
+          <div class="score-strip">
+            <span id="blackPlayer">黑棋：等待</span>
+            <span id="whitePlayer">白棋：等待</span>
+          </div>
+        </header>
+        <section class="board-layout">
+          <div class="canvas-wrap grid-canvas-wrap reversi-wrap">
+            <canvas id="boardCanvas" width="760" height="760" aria-label="黑白棋棋盘"></canvas>
+          </div>
+          <aside class="match-panel">
+            <div class="turn-card">
+              <span id="turnBadge">等待开始</span>
+              <strong id="matchStatus">创建房间、加入房间或本地对战后开始</strong>
+            </div>
+            <section class="record-card" aria-label="当前房间战绩">
+              <div class="panel-title">
+                <h2>当前房间战绩</h2>
+                <span id="recordSession">新房间</span>
+              </div>
+              <div class="record-grid">
+                <div><span>总局数</span><strong id="totalGames">0</strong></div>
+                <div><span>黑棋胜</span><strong id="blackWins">0</strong></div>
+                <div><span>白棋胜</span><strong id="whiteWins">0</strong></div>
+              </div>
+            </section>
+            <div class="actions">
+              <button id="startBtn" class="primary-btn" type="button">开始</button>
+              <button id="restartBtn" type="button">重新开始</button>
+            </div>
+            <ol id="moveList" class="move-list" aria-label="落子记录"></ol>
+          </aside>
+        </section>
+      </main>
+    </div>
+    <div id="resultModal" class="modal-backdrop" hidden>
+      <section class="result-dialog" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+        <p class="eyebrow">Game Set</p>
+        <h2 id="resultTitle">本局结束</h2>
+        <p id="resultSummary"></p>
+        <div class="record-grid modal-record">
+          <div><span>总局数</span><strong id="modalTotalGames">0</strong></div>
+          <div><span>黑棋胜</span><strong id="modalBlackWins">0</strong></div>
+          <div><span>白棋胜</span><strong id="modalWhiteWins">0</strong></div>
+        </div>
+        <div class="dialog-actions">
+          <button id="playAgainBtn" class="primary-btn" type="button">再开一把</button>
+          <button id="exitRoomBtn" type="button">退出</button>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

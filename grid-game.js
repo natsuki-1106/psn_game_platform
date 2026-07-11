@@ -85,11 +85,12 @@
     role: "spectator",
     roomId: "",
     players: { black: "等待", white: "等待" },
-    record: { total: 0, black: 0, white: 0, draw: 0 },
+    record: { total: 0, players: {}, draw: 0 },
     recordLabel: "新房间",
     gameCounted: false,
     hostColor: BLACK,
     swapAfterGame: false,
+    nextBlackColor: EMPTY,
     timers: { black: 0, white: 0 },
     turnStartedAt: null,
     message: "创建房间、加入房间或本地对战后开始",
@@ -205,6 +206,7 @@
       gameCounted: state.gameCounted,
       hostColor: state.hostColor,
       swapAfterGame: state.swapAfterGame,
+      nextBlackColor: state.nextBlackColor,
       timers: elapsedTimers(),
       turnStartedAt: isReversiClockRunning() ? Date.now() : null,
       message: state.message,
@@ -220,11 +222,12 @@
     state.draw = Boolean(snapshot.draw);
     state.started = Boolean(snapshot.started);
     state.players = snapshot.players || state.players;
-    state.record = snapshot.record || state.record;
+    state.record = normalizeRecord(snapshot.record || state.record);
     state.recordLabel = snapshot.recordLabel || state.recordLabel;
     state.gameCounted = Boolean(snapshot.gameCounted);
     state.hostColor = snapshot.hostColor || BLACK;
     state.swapAfterGame = Boolean(snapshot.swapAfterGame);
+    state.nextBlackColor = snapshot.nextBlackColor || EMPTY;
     state.timers = snapshot.timers || { black: 0, white: 0 };
     state.turnStartedAt = config.key === "reversi" && snapshot.turnStartedAt && state.started && !state.winner && !state.draw ? Date.now() : null;
     state.message = snapshot.message || state.message;
@@ -241,13 +244,42 @@
   }
 
   function resetRecord(label = "新房间") {
-    state.record = { total: 0, black: 0, white: 0, draw: 0 };
+    state.record = { total: 0, players: {}, draw: 0 };
     state.recordLabel = label;
     state.gameCounted = false;
+    state.nextBlackColor = EMPTY;
+    state.swapAfterGame = false;
+  }
+
+  function normalizeRecord(record = state.record) {
+    const normalized = {
+      total: Number(record?.total) || 0,
+      players: { ...(record?.players || {}) },
+      draw: Number(record?.draw) || 0,
+    };
+    if (!record?.players) {
+      if (record?.black) normalized.players[state.players.black] = (normalized.players[state.players.black] || 0) + record.black;
+      if (record?.white) normalized.players[state.players.white] = (normalized.players[state.players.white] || 0) + record.white;
+    }
+    return normalized;
+  }
+
+  function playerNameForColor(color) {
+    return state.players[colorKey(color)] || colorName(color);
+  }
+
+  function winsForPlayer(name) {
+    return normalizeRecord().players[name] || 0;
+  }
+
+  function countWinForPlayer(color) {
+    state.record = normalizeRecord();
+    const name = playerNameForColor(color);
+    state.record.players[name] = (state.record.players[name] || 0) + 1;
   }
 
   function setupBoard() {
-    applyAutoSideSwap();
+    applyWinnerBlackRule();
     state.board = createBoard();
     if (config.key === "reversi") {
       const midR = config.rows / 2 - 1;
@@ -263,6 +295,7 @@
     state.draw = false;
     state.started = true;
     state.gameCounted = false;
+    state.nextBlackColor = EMPTY;
     resetTimers();
     state.message = config.startMessage;
     updateLegalMoves();
@@ -295,6 +328,7 @@
     state.roomId = "local";
     state.hostColor = BLACK;
     state.swapAfterGame = false;
+    state.nextBlackColor = EMPTY;
     state.players = { black: "本地玩家 A", white: "本地玩家 B" };
     resetRecord("本地房间");
     setupBoard();
@@ -306,12 +340,15 @@
     if (localBtn) localBtn.hidden = inOnlineRoom;
   }
 
-  function applyAutoSideSwap() {
-    if (!state.swapAfterGame) return;
-    state.hostColor = oppositeColor(state.hostColor);
-    const black = state.players.black;
-    state.players.black = state.players.white;
-    state.players.white = black;
+  function applyWinnerBlackRule() {
+    if (!state.nextBlackColor) return;
+    if (state.nextBlackColor === WHITE) {
+      state.hostColor = oppositeColor(state.hostColor);
+      const black = state.players.black;
+      state.players.black = state.players.white;
+      state.players.white = black;
+    }
+    state.nextBlackColor = EMPTY;
     state.swapAfterGame = false;
     syncRoleFromSeat();
   }
@@ -439,12 +476,13 @@
     state.draw = !winner;
     state.message = message;
     if (!state.gameCounted) {
+      state.record = normalizeRecord();
       state.record.total += 1;
-      if (winner === BLACK) state.record.black += 1;
-      else if (winner === WHITE) state.record.white += 1;
+      if (winner === BLACK || winner === WHITE) countWinForPlayer(winner);
       else state.record.draw += 1;
       state.gameCounted = true;
-      state.swapAfterGame = true;
+      state.nextBlackColor = winner || EMPTY;
+      state.swapAfterGame = Boolean(winner);
     }
     showResultModal();
   }
@@ -724,11 +762,15 @@
     whitePlayer.classList.toggle("active-timer", config.key === "reversi" && state.started && !state.winner && !state.draw && state.turn === WHITE);
     recordSession.textContent = state.recordLabel;
     totalGames.textContent = state.record.total;
-    blackWins.textContent = state.record.black;
-    whiteWins.textContent = state.record.white;
+    if (blackWins.previousElementSibling) blackWins.previousElementSibling.textContent = `${state.players.black}胜`;
+    if (whiteWins.previousElementSibling) whiteWins.previousElementSibling.textContent = `${state.players.white}胜`;
+    if (modalBlackWins.previousElementSibling) modalBlackWins.previousElementSibling.textContent = `${state.players.black}胜`;
+    if (modalWhiteWins.previousElementSibling) modalWhiteWins.previousElementSibling.textContent = `${state.players.white}胜`;
+    blackWins.textContent = winsForPlayer(state.players.black);
+    whiteWins.textContent = winsForPlayer(state.players.white);
     modalTotalGames.textContent = state.record.total;
-    modalBlackWins.textContent = state.record.black;
-    modalWhiteWins.textContent = state.record.white;
+    modalBlackWins.textContent = winsForPlayer(state.players.black);
+    modalWhiteWins.textContent = winsForPlayer(state.players.white);
     turnBadge.textContent = state.winner ? `${colorName(state.winner)}获胜` : state.draw ? "平局" : state.started ? `${colorName(state.turn)}回合` : "等待开始";
     matchStatus.textContent = state.message;
     startBtn.disabled = state.mode === "idle" || (state.mode === "online" && !roomApi?.isHost?.());
@@ -791,6 +833,7 @@
       board: state.board,
       hostColor: colorName(state.hostColor),
       swapAfterGame: state.swapAfterGame,
+      nextBlackColor: state.nextBlackColor ? colorName(state.nextBlackColor) : null,
       pieceCounts: config.key === "reversi" ? countPieces() : null,
       timers: elapsedTimers(),
       moves: state.moves.map((move) => ({

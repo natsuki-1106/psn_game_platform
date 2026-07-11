@@ -43,13 +43,14 @@ const state = {
   players: { black: "等待", white: "等待" },
   hover: null,
   message: "创建房间或加入房间开始对局",
-  record: { total: 0, black: 0, white: 0 },
+  record: { total: 0, players: {} },
   recordLabel: "新房间",
   gameCounted: false,
   undoRequest: null,
   undoLocks: { [BLACK]: false, [WHITE]: false },
   hostColor: BLACK,
   swapAfterGame: false,
+  nextBlackColor: EMPTY,
   room: null,
 };
 
@@ -166,9 +167,37 @@ function hasSupabaseConfig() {
 }
 
 function resetRoomRecord(label = "新房间") {
-  state.record = { total: 0, black: 0, white: 0 };
+  state.record = { total: 0, players: {} };
   state.recordLabel = label;
   state.gameCounted = false;
+  state.nextBlackColor = EMPTY;
+  state.swapAfterGame = false;
+}
+
+function normalizeRecord(record = state.record) {
+  const normalized = {
+    total: Number(record?.total) || 0,
+    players: { ...(record?.players || {}) },
+  };
+  if (!record?.players) {
+    if (record?.black) normalized.players[state.players.black] = (normalized.players[state.players.black] || 0) + record.black;
+    if (record?.white) normalized.players[state.players.white] = (normalized.players[state.players.white] || 0) + record.white;
+  }
+  return normalized;
+}
+
+function playerNameForColor(color) {
+  return state.players[colorKey(color)] || colorName(color);
+}
+
+function winsForPlayer(name) {
+  return normalizeRecord().players[name] || 0;
+}
+
+function countWinForPlayer(color) {
+  state.record = normalizeRecord();
+  const name = playerNameForColor(color);
+  state.record.players[name] = (state.record.players[name] || 0) + 1;
 }
 
 function hideResultModal() {
@@ -180,8 +209,10 @@ function showResultModal() {
   resultTitle.textContent = "本局结束";
   resultSummary.textContent = `${colorName(state.winner)}获胜，要再开一把吗？`;
   modalTotalGames.textContent = state.record.total;
-  modalBlackWins.textContent = state.record.black;
-  modalWhiteWins.textContent = state.record.white;
+  if (modalBlackWins.previousElementSibling) modalBlackWins.previousElementSibling.textContent = `${state.players.black}胜`;
+  if (modalWhiteWins.previousElementSibling) modalWhiteWins.previousElementSibling.textContent = `${state.players.white}胜`;
+  modalBlackWins.textContent = winsForPlayer(state.players.black);
+  modalWhiteWins.textContent = winsForPlayer(state.players.white);
 }
 
 function roomSnapshot() {
@@ -199,6 +230,7 @@ function roomSnapshot() {
     undoLocks: state.undoLocks,
     hostColor: state.hostColor,
     swapAfterGame: state.swapAfterGame,
+    nextBlackColor: state.nextBlackColor,
   };
 }
 
@@ -210,13 +242,14 @@ function applyRoomSnapshot(snapshot) {
   state.winner = snapshot.winner || EMPTY;
   state.players = snapshot.players || state.players;
   state.message = snapshot.message || state.message;
-  state.record = snapshot.record || state.record;
+  state.record = normalizeRecord(snapshot.record || state.record);
   state.recordLabel = snapshot.recordLabel || state.recordLabel;
   state.gameCounted = Boolean(snapshot.gameCounted);
   state.undoRequest = snapshot.undoRequest || null;
   state.undoLocks = snapshot.undoLocks || { [BLACK]: false, [WHITE]: false };
   state.hostColor = snapshot.hostColor || BLACK;
   state.swapAfterGame = Boolean(snapshot.swapAfterGame);
+  state.nextBlackColor = snapshot.nextBlackColor || EMPTY;
   syncRoleFromSeat();
   if (state.winner) showResultModal();
   else hideResultModal();
@@ -229,13 +262,14 @@ function broadcastSnapshot() {
 }
 
 function resetBoard(announce = true, message = "黑棋先手") {
-  applyAutoSideSwap();
+  applyWinnerBlackRule();
   state.board = createBoard();
   state.moves = [];
   state.turn = BLACK;
   state.winner = EMPTY;
   state.hover = null;
   state.gameCounted = false;
+  state.nextBlackColor = EMPTY;
   state.undoRequest = null;
   state.undoLocks = { [BLACK]: false, [WHITE]: false };
   state.message = message;
@@ -251,6 +285,7 @@ function startLocal() {
   state.roomId = "local";
   state.hostColor = BLACK;
   state.swapAfterGame = false;
+  state.nextBlackColor = EMPTY;
   state.players = { black: "本地玩家 A", white: "本地玩家 B" };
   resetRoomRecord("本地房间");
   setStatus("本地对战", true);
@@ -264,12 +299,15 @@ function updateRoomControls() {
   if (restartBtn) restartBtn.hidden = isGithubPages();
 }
 
-function applyAutoSideSwap() {
-  if (!state.swapAfterGame) return;
-  state.hostColor = oppositeColor(state.hostColor);
-  const black = state.players.black;
-  state.players.black = state.players.white;
-  state.players.white = black;
+function applyWinnerBlackRule() {
+  if (!state.nextBlackColor) return;
+  if (state.nextBlackColor === WHITE) {
+    state.hostColor = oppositeColor(state.hostColor);
+    const black = state.players.black;
+    state.players.black = state.players.white;
+    state.players.white = black;
+  }
+  state.nextBlackColor = EMPTY;
   state.swapAfterGame = false;
   syncRoleFromSeat();
 }
@@ -308,11 +346,15 @@ function updatePlayers() {
 function updateRecord() {
   recordSession.textContent = state.recordLabel;
   totalGames.textContent = state.record.total;
-  blackWins.textContent = state.record.black;
-  whiteWins.textContent = state.record.white;
+  if (blackWins.previousElementSibling) blackWins.previousElementSibling.textContent = `${state.players.black}胜`;
+  if (whiteWins.previousElementSibling) whiteWins.previousElementSibling.textContent = `${state.players.white}胜`;
+  if (modalBlackWins.previousElementSibling) modalBlackWins.previousElementSibling.textContent = `${state.players.black}胜`;
+  if (modalWhiteWins.previousElementSibling) modalWhiteWins.previousElementSibling.textContent = `${state.players.white}胜`;
+  blackWins.textContent = winsForPlayer(state.players.black);
+  whiteWins.textContent = winsForPlayer(state.players.white);
   modalTotalGames.textContent = state.record.total;
-  modalBlackWins.textContent = state.record.black;
-  modalWhiteWins.textContent = state.record.white;
+  modalBlackWins.textContent = winsForPlayer(state.players.black);
+  modalWhiteWins.textContent = winsForPlayer(state.players.white);
 }
 
 function updateMoves() {
@@ -478,10 +520,11 @@ function finishGame(color) {
   state.winner = color;
   state.message = `${colorName(color)}获胜`;
   if (!state.gameCounted) {
+    state.record = normalizeRecord();
     state.record.total += 1;
-    if (color === BLACK) state.record.black += 1;
-    if (color === WHITE) state.record.white += 1;
+    countWinForPlayer(color);
     state.gameCounted = true;
+    state.nextBlackColor = color;
     state.swapAfterGame = true;
   }
   showResultModal();
@@ -636,6 +679,7 @@ window.render_game_to_text = () =>
     undoLocks: state.undoLocks,
     hostColor: colorName(state.hostColor),
     swapAfterGame: state.swapAfterGame,
+    nextBlackColor: state.nextBlackColor ? colorName(state.nextBlackColor) : null,
     moves: state.moves.map((move) => ({ row: move.row, col: move.col, point: cellLabel(move.row, move.col), color: colorName(move.color), id: move.id || null })),
     message: state.message,
     connectionStatus: connectionStatus.textContent,

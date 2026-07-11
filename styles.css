@@ -694,6 +694,12 @@ label {
   font-weight: 800;
 }
 
+.score-strip span.active-timer {
+  border-color: rgba(26, 115, 232, 0.42);
+  background: #edf5ff;
+  color: var(--text);
+}
+
 .board-layout {
   display: grid;
   grid-template-columns: minmax(360px, 760px) minmax(260px, 340px);

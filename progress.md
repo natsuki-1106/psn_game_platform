@@ -109,3 +109,4 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Reversi now shows current black/white piece counts in the top score strip and exposes them in `render_game_to_text`.
 - Verified with `BASE_URL=http://127.0.0.1:8099 npm test`; inspected `outputs/gomoku-modal.png`, `outputs/grid-games-smoke.png`, and `outputs/reversi-coordinates-counts.png`.
 - Added a Gomoku-style latest-move marker to Reversi so the opponent's most recent placed stone is highlighted on the board; verified with `BASE_URL=http://127.0.0.1:8100 npm test` and inspected `outputs/reversi-last-move-marker.png`.
+- Added Reversi per-side cumulative timers that sync through room snapshots, reset per game, stop on game end, and highlight the active clock in the score strip; verified with `BASE_URL=http://127.0.0.1:8101 npm test` and inspected `outputs/reversi-timer.png`.

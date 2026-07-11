@@ -90,12 +90,15 @@
     gameCounted: false,
     hostColor: BLACK,
     swapAfterGame: false,
+    timers: { black: 0, white: 0 },
+    turnStartedAt: null,
     message: "创建房间、加入房间或本地对战后开始",
     legalMoves: [],
     room: null,
   };
 
   let roomApi = null;
+  let renderTicker = null;
 
   roomApi = window.initRoomPanel({
     gameKey: config.key,
@@ -202,6 +205,8 @@
       gameCounted: state.gameCounted,
       hostColor: state.hostColor,
       swapAfterGame: state.swapAfterGame,
+      timers: elapsedTimers(),
+      turnStartedAt: isReversiClockRunning() ? Date.now() : null,
       message: state.message,
     };
   }
@@ -220,6 +225,8 @@
     state.gameCounted = Boolean(snapshot.gameCounted);
     state.hostColor = snapshot.hostColor || BLACK;
     state.swapAfterGame = Boolean(snapshot.swapAfterGame);
+    state.timers = snapshot.timers || { black: 0, white: 0 };
+    state.turnStartedAt = config.key === "reversi" && snapshot.turnStartedAt && state.started && !state.winner && !state.draw ? Date.now() : null;
     state.message = snapshot.message || state.message;
     syncRoleFromSeat();
     updateLegalMoves();
@@ -256,6 +263,7 @@
     state.draw = false;
     state.started = true;
     state.gameCounted = false;
+    resetTimers();
     state.message = config.startMessage;
     updateLegalMoves();
     hideResultModal();
@@ -387,6 +395,45 @@
     return `${String.fromCharCode(65 + col)}${row + 1}`;
   }
 
+  function resetTimers() {
+    if (config.key !== "reversi") return;
+    state.timers = { black: 0, white: 0 };
+    state.turnStartedAt = Date.now();
+  }
+
+  function isReversiClockRunning() {
+    return config.key === "reversi" && state.started && !state.winner && !state.draw && Boolean(state.turnStartedAt);
+  }
+
+  function elapsedTimers() {
+    if (config.key !== "reversi") return null;
+    const timers = { black: state.timers.black || 0, white: state.timers.white || 0 };
+    if (isReversiClockRunning()) {
+      timers[colorKey(state.turn)] += Math.max(0, Date.now() - state.turnStartedAt);
+    }
+    return timers;
+  }
+
+  function commitTurnTimer(color = state.turn) {
+    if (config.key !== "reversi" || !state.turnStartedAt) return;
+    const key = colorKey(color);
+    state.timers = elapsedTimers();
+    state.turnStartedAt = null;
+    state.timers[key] = Math.max(0, state.timers[key] || 0);
+  }
+
+  function startTurnTimer() {
+    if (config.key !== "reversi" || state.winner || state.draw || !state.started) return;
+    state.turnStartedAt = Date.now();
+  }
+
+  function formatTimer(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
   function finishGame(winner, message) {
     state.winner = winner;
     state.draw = !winner;
@@ -470,12 +517,14 @@
     } else if (config.key === "reversi") {
       const flips = legalReversiFlips(row, col, color);
       if (!flips.length) return false;
+      commitTurnTimer(color);
       state.board[row][col] = color;
       flips.forEach(([r, c]) => {
         state.board[r][c] = color;
       });
       state.moves.push({ row, col, color, flips: flips.length });
       afterMove(row, col, color);
+      startTurnTimer();
     } else {
       if (state.board[row][col] !== EMPTY) return false;
       state.board[row][col] = color;
@@ -664,10 +713,15 @@
 
   function renderStatus() {
     const pieces = countPieces();
+    const timers = elapsedTimers();
     const blackCount = config.key === "reversi" ? `（${pieces.black}）` : "";
     const whiteCount = config.key === "reversi" ? `（${pieces.white}）` : "";
-    blackPlayer.textContent = `${config.labels.black}：${state.players.black}${blackCount}`;
-    whitePlayer.textContent = `${config.labels.white}：${state.players.white}${whiteCount}`;
+    const blackTimer = timers ? ` ${formatTimer(timers.black)}` : "";
+    const whiteTimer = timers ? ` ${formatTimer(timers.white)}` : "";
+    blackPlayer.textContent = `${config.labels.black}：${state.players.black}${blackCount}${blackTimer}`;
+    whitePlayer.textContent = `${config.labels.white}：${state.players.white}${whiteCount}${whiteTimer}`;
+    blackPlayer.classList.toggle("active-timer", config.key === "reversi" && state.started && !state.winner && !state.draw && state.turn === BLACK);
+    whitePlayer.classList.toggle("active-timer", config.key === "reversi" && state.started && !state.winner && !state.draw && state.turn === WHITE);
     recordSession.textContent = state.recordLabel;
     totalGames.textContent = state.record.total;
     blackWins.textContent = state.record.black;
@@ -738,6 +792,7 @@
       hostColor: colorName(state.hostColor),
       swapAfterGame: state.swapAfterGame,
       pieceCounts: config.key === "reversi" ? countPieces() : null,
+      timers: elapsedTimers(),
       moves: state.moves.map((move) => ({
         ...move,
         point: config.key === "reversi" ? cellLabel(move.row, move.col) : `${move.row + 1}, ${move.col + 1}`,
@@ -757,5 +812,13 @@
   window.advanceTime = () => render();
 
   updateLegalMoves();
+  if (config.key === "reversi") {
+    renderTicker = window.setInterval(() => {
+      if (isReversiClockRunning()) render();
+    }, 250);
+    window.addEventListener("beforeunload", () => {
+      if (renderTicker) window.clearInterval(renderTicker);
+    });
+  }
   render();
 })();

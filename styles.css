@@ -752,7 +752,8 @@ canvas {
   background: var(--panel);
 }
 
-.record-card {
+.record-card,
+.piece-count-card {
   display: grid;
   gap: 14px;
   padding: 16px;
@@ -761,13 +762,19 @@ canvas {
   background: var(--panel);
 }
 
-.record-grid {
+.record-grid,
+.piece-count-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
-.record-grid div {
+.piece-count-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.record-grid div,
+.piece-count-grid div {
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -777,13 +784,15 @@ canvas {
   background: var(--panel-soft);
 }
 
-.record-grid span {
+.record-grid span,
+.piece-count-grid span {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
 }
 
-.record-grid strong {
+.record-grid strong,
+.piece-count-grid strong {
   color: var(--ink);
   font-size: 24px;
   line-height: 1;

@@ -60,6 +60,8 @@
   const matchStatus = document.querySelector("#matchStatus");
   const blackPlayer = document.querySelector("#blackPlayer");
   const whitePlayer = document.querySelector("#whitePlayer");
+  const blackPieceCount = document.querySelector("#blackPieceCount");
+  const whitePieceCount = document.querySelector("#whitePieceCount");
   const moveList = document.querySelector("#moveList");
   const recordSession = document.querySelector("#recordSession");
   const totalGames = document.querySelector("#totalGames");
@@ -752,12 +754,14 @@
   function renderStatus() {
     const pieces = countPieces();
     const timers = elapsedTimers();
-    const blackCount = config.key === "reversi" ? `（${pieces.black}）` : "";
-    const whiteCount = config.key === "reversi" ? `（${pieces.white}）` : "";
+    const blackCount = config.key === "reversi" && !blackPieceCount ? `（${pieces.black}）` : "";
+    const whiteCount = config.key === "reversi" && !whitePieceCount ? `（${pieces.white}）` : "";
     const blackTimer = timers ? ` ${formatTimer(timers.black)}` : "";
     const whiteTimer = timers ? ` ${formatTimer(timers.white)}` : "";
     blackPlayer.textContent = `${config.labels.black}：${state.players.black}${blackCount}${blackTimer}`;
     whitePlayer.textContent = `${config.labels.white}：${state.players.white}${whiteCount}${whiteTimer}`;
+    if (blackPieceCount) blackPieceCount.textContent = pieces.black;
+    if (whitePieceCount) whitePieceCount.textContent = pieces.white;
     blackPlayer.classList.toggle("active-timer", config.key === "reversi" && state.started && !state.winner && !state.draw && state.turn === BLACK);
     whitePlayer.classList.toggle("active-timer", config.key === "reversi" && state.started && !state.winner && !state.draw && state.turn === WHITE);
     recordSession.textContent = state.recordLabel;

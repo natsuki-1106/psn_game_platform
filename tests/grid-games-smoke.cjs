@@ -70,6 +70,12 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.waitForTimeout(1100);
   await playCell(2, 3, 8, 8);
   const reversiState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  const reversiPieceText = await page.evaluate(() => ({
+    black: document.querySelector("#blackPieceCount")?.textContent || "",
+    white: document.querySelector("#whitePieceCount")?.textContent || "",
+    blackPlayer: document.querySelector("#blackPlayer")?.textContent || "",
+    whitePlayer: document.querySelector("#whitePlayer")?.textContent || "",
+  }));
 
   await page.goto(`${baseUrl}/connect4.html`, { waitUntil: "networkidle" });
   await page.click("#localBtn");
@@ -81,7 +87,7 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.screenshot({ path: "outputs/grid-games-smoke.png", fullPage: true });
   await browser.close();
 
-  console.log(JSON.stringify({ lobbyLinks, tictactoeState, tictactoeReplayState, tictactoeWhiteWinState, tictactoeWhiteReplayState, reversiState, connect4State, errors }, null, 2));
+  console.log(JSON.stringify({ lobbyLinks, tictactoeState, tictactoeReplayState, tictactoeWhiteWinState, tictactoeWhiteReplayState, reversiState, reversiPieceText, connect4State, errors }, null, 2));
 
   if (errors.length) process.exit(1);
   if (lobbyLinks[0] !== "gomoku.html" || lobbyLinks[1] !== "tictactoe.html" || lobbyLinks[2] !== "reversi.html" || lobbyLinks[3] !== "connect4.html") process.exit(1);
@@ -92,6 +98,8 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   if (tictactoeWhiteReplayState.players.black !== "本地玩家 B" || tictactoeWhiteReplayState.players.white !== "本地玩家 A") process.exit(1);
   if (reversiState.game !== "reversi" || reversiState.moves.length !== 1 || reversiState.board[3][3] !== 1) process.exit(1);
   if (reversiState.moves[0].point !== "D3" || reversiState.pieceCounts.black !== 4 || reversiState.pieceCounts.white !== 1) process.exit(1);
+  if (reversiPieceText.black !== "4" || reversiPieceText.white !== "1") process.exit(1);
+  if (reversiPieceText.blackPlayer.includes("（4）") || reversiPieceText.whitePlayer.includes("（1）")) process.exit(1);
   if (!reversiState.timers || reversiState.timers.black < 1000 || reversiState.timers.white < 0) process.exit(1);
   if (connect4State.game !== "connect4" || connect4State.winner !== "红方" || connect4State.record.players["本地玩家 A"] !== 1) process.exit(1);
 })();

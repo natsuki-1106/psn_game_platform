@@ -55,6 +55,9 @@
   const localBtn = document.querySelector("#localBtn");
   const startBtn = document.querySelector("#startBtn");
   const restartBtn = document.querySelector("#restartBtn");
+  const undoBtn = document.querySelector("#undoBtn");
+  const undoModeField = document.querySelector("#undoModeField");
+  const undoModeSelect = document.querySelector("#undoModeSelect");
   const roomStatus = document.querySelector("#roomStatus");
   const turnBadge = document.querySelector("#turnBadge");
   const matchStatus = document.querySelector("#matchStatus");
@@ -93,6 +96,7 @@
     hostColor: BLACK,
     swapAfterGame: false,
     nextBlackColor: EMPTY,
+    undoMode: "no-undo",
     timers: { black: 0, white: 0 },
     turnStartedAt: null,
     message: "创建房间、加入房间或本地对战后开始",
@@ -102,6 +106,10 @@
 
   let roomApi = null;
   let renderTicker = null;
+
+  function selectedUndoMode() {
+    return undoModeSelect?.value === "undo" ? "undo" : "no-undo";
+  }
 
   roomApi = window.initRoomPanel({
     gameKey: config.key,
@@ -128,6 +136,9 @@
 
       state.mode = "online";
       state.roomId = room.roomId;
+      if (config.key === "reversi" && room.role === "host" && !state.started) {
+        state.undoMode = selectedUndoMode();
+      }
       if (room.role === "host") {
         state.players.black = room.nickname || `${config.labels.black}玩家`;
         if (!state.players.white || state.players.white === "等待") state.players.white = "等待加入";
@@ -209,6 +220,7 @@
       hostColor: state.hostColor,
       swapAfterGame: state.swapAfterGame,
       nextBlackColor: state.nextBlackColor,
+      undoMode: state.undoMode,
       timers: elapsedTimers(),
       turnStartedAt: isReversiClockRunning() ? Date.now() : null,
       message: state.message,
@@ -230,9 +242,11 @@
     state.hostColor = snapshot.hostColor || BLACK;
     state.swapAfterGame = Boolean(snapshot.swapAfterGame);
     state.nextBlackColor = snapshot.nextBlackColor || EMPTY;
+    state.undoMode = snapshot.undoMode || "no-undo";
     state.timers = snapshot.timers || { black: 0, white: 0 };
     state.turnStartedAt = config.key === "reversi" && snapshot.turnStartedAt && state.started && !state.winner && !state.draw ? Date.now() : null;
     state.message = snapshot.message || state.message;
+    if (undoModeSelect && config.key === "reversi") undoModeSelect.value = state.undoMode === "undo" ? "undo" : "no-undo";
     syncRoleFromSeat();
     updateLegalMoves();
     if (state.winner || state.draw) showResultModal();
@@ -331,6 +345,7 @@
     state.hostColor = BLACK;
     state.swapAfterGame = false;
     state.nextBlackColor = EMPTY;
+    if (config.key === "reversi") state.undoMode = selectedUndoMode();
     state.players = { black: "本地玩家 A", white: "本地玩家 B" };
     resetRecord("本地房间");
     setupBoard();
@@ -340,6 +355,7 @@
   function updateRoomControls() {
     const inOnlineRoom = state.mode === "online" && Boolean(state.roomId);
     if (localBtn) localBtn.hidden = inOnlineRoom;
+    if (undoModeField) undoModeField.hidden = inOnlineRoom || config.key !== "reversi" || state.started;
   }
 
   function applyWinnerBlackRule() {
@@ -483,8 +499,8 @@
       if (winner === BLACK || winner === WHITE) countWinForPlayer(winner);
       else state.record.draw += 1;
       state.gameCounted = true;
-      state.nextBlackColor = winner || EMPTY;
-      state.swapAfterGame = Boolean(winner);
+      state.nextBlackColor = config.key === "tictactoe" ? WHITE : winner || EMPTY;
+      state.swapAfterGame = Boolean(state.nextBlackColor);
     }
     showResultModal();
   }
@@ -534,6 +550,38 @@
     return (state.role === "black" && state.turn === BLACK) || (state.role === "white" && state.turn === WHITE);
   }
 
+  function canUndoLastMove() {
+    if (config.key !== "reversi" || state.undoMode !== "undo" || !state.started || state.winner || state.draw) return false;
+    const move = state.moves.at(-1);
+    if (!move || !Array.isArray(move.flipCells)) return false;
+    if (state.mode === "local") return true;
+    if (state.mode !== "online") return false;
+    return ownColor() === move.color;
+  }
+
+  function undoLastMove() {
+    if (!canUndoLastMove()) {
+      state.message = state.undoMode === "undo" ? "只能撤回自己的最新一步" : "当前房间未开启悔棋";
+      render();
+      return false;
+    }
+    const move = state.moves.pop();
+    const revertedColor = oppositeColor(move.color);
+    if (state.turnStartedAt) state.turnStartedAt = Date.now();
+    state.board[move.row][move.col] = EMPTY;
+    move.flipCells.forEach(({ row, col }) => {
+      if (inBounds(row, col)) state.board[row][col] = revertedColor;
+    });
+    state.turn = move.color;
+    state.winner = EMPTY;
+    state.draw = false;
+    state.message = `${colorName(move.color)}已悔一步，轮到${colorName(state.turn)}`;
+    updateLegalMoves();
+    render();
+    broadcastSnapshot();
+    return true;
+  }
+
   function playCell(row, col) {
     if (!canPlay()) {
       state.message = state.started ? "还没轮到你操作" : "请先开始游戏";
@@ -562,7 +610,7 @@
       flips.forEach(([r, c]) => {
         state.board[r][c] = color;
       });
-      state.moves.push({ row, col, color, flips: flips.length });
+      state.moves.push({ row, col, color, flips: flips.length, flipCells: flips.map(([r, c]) => ({ row: r, col: c })) });
       afterMove(row, col, color);
       startTurnTimer();
     } else {
@@ -754,6 +802,9 @@
   function renderStatus() {
     const pieces = countPieces();
     const timers = elapsedTimers();
+    if (undoModeSelect && config.key === "reversi" && !state.started) {
+      undoModeSelect.value = state.undoMode === "undo" ? "undo" : "no-undo";
+    }
     const blackCount = config.key === "reversi" && !blackPieceCount ? `（${pieces.black}）` : "";
     const whiteCount = config.key === "reversi" && !whitePieceCount ? `（${pieces.white}）` : "";
     const blackTimer = timers ? ` ${formatTimer(timers.black)}` : "";
@@ -764,6 +815,10 @@
     if (whitePieceCount) whitePieceCount.textContent = pieces.white;
     blackPlayer.classList.toggle("active-timer", config.key === "reversi" && state.started && !state.winner && !state.draw && state.turn === BLACK);
     whitePlayer.classList.toggle("active-timer", config.key === "reversi" && state.started && !state.winner && !state.draw && state.turn === WHITE);
+    if (undoBtn) {
+      undoBtn.hidden = config.key !== "reversi";
+      undoBtn.disabled = !canUndoLastMove();
+    }
     recordSession.textContent = state.recordLabel;
     totalGames.textContent = state.record.total;
     if (blackWins.previousElementSibling) blackWins.previousElementSibling.textContent = `${state.players.black}胜`;
@@ -817,12 +872,18 @@
   });
 
   localBtn.addEventListener("click", startLocal);
+  undoModeSelect?.addEventListener("change", () => {
+    state.undoMode = selectedUndoMode();
+    if (config.key === "reversi" && state.mode !== "idle" && !state.started) broadcastSnapshot();
+    render();
+  });
   startBtn.addEventListener("click", () => startGame(true));
   restartBtn.addEventListener("click", () => {
     resetRecord(state.mode === "local" ? "本地房间" : "当前房间");
     startGame(true);
   });
   playAgainBtn.addEventListener("click", () => startGame(true));
+  undoBtn?.addEventListener("click", undoLastMove);
   exitRoomBtn.addEventListener("click", exitToLobby);
   window.addEventListener("resize", render);
 
@@ -838,6 +899,7 @@
       hostColor: colorName(state.hostColor),
       swapAfterGame: state.swapAfterGame,
       nextBlackColor: state.nextBlackColor ? colorName(state.nextBlackColor) : null,
+      undoMode: state.undoMode,
       pieceCounts: config.key === "reversi" ? countPieces() : null,
       timers: elapsedTimers(),
       moves: state.moves.map((move) => ({

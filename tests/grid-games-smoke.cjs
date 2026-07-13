@@ -75,7 +75,17 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
     white: document.querySelector("#whitePieceCount")?.textContent || "",
     blackPlayer: document.querySelector("#blackPlayer")?.textContent || "",
     whitePlayer: document.querySelector("#whitePlayer")?.textContent || "",
+    undoDisabled: document.querySelector("#undoBtn")?.disabled ?? null,
   }));
+
+  await page.goto(`${baseUrl}/reversi.html`, { waitUntil: "networkidle" });
+  await page.selectOption("#undoModeSelect", "undo");
+  await page.click("#localBtn");
+  await playCell(2, 3, 8, 8);
+  const reversiUndoReadyState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  const reversiUndoButtonReady = await page.locator("#undoBtn").isEnabled();
+  await page.click("#undoBtn");
+  const reversiUndoState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 
   await page.goto(`${baseUrl}/connect4.html`, { waitUntil: "networkidle" });
   await page.click("#localBtn");
@@ -87,12 +97,12 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.screenshot({ path: "outputs/grid-games-smoke.png", fullPage: true });
   await browser.close();
 
-  console.log(JSON.stringify({ lobbyLinks, tictactoeState, tictactoeReplayState, tictactoeWhiteWinState, tictactoeWhiteReplayState, reversiState, reversiPieceText, connect4State, errors }, null, 2));
+  console.log(JSON.stringify({ lobbyLinks, tictactoeState, tictactoeReplayState, tictactoeWhiteWinState, tictactoeWhiteReplayState, reversiState, reversiPieceText, reversiUndoReadyState, reversiUndoButtonReady, reversiUndoState, connect4State, errors }, null, 2));
 
   if (errors.length) process.exit(1);
   if (lobbyLinks[0] !== "gomoku.html" || lobbyLinks[1] !== "tictactoe.html" || lobbyLinks[2] !== "reversi.html" || lobbyLinks[3] !== "connect4.html") process.exit(1);
   if (tictactoeState.game !== "tictactoe" || tictactoeState.winner !== "先手" || tictactoeState.record.players["本地玩家 A"] !== 1) process.exit(1);
-  if (tictactoeReplayState.players.black !== "本地玩家 A" || tictactoeReplayState.players.white !== "本地玩家 B") process.exit(1);
+  if (tictactoeReplayState.players.black !== "本地玩家 B" || tictactoeReplayState.players.white !== "本地玩家 A") process.exit(1);
   if (tictactoeReplayState.record.players["本地玩家 A"] !== 1) process.exit(1);
   if (tictactoeWhiteWinState.winner !== "后手" || tictactoeWhiteWinState.record.players["本地玩家 B"] !== 1) process.exit(1);
   if (tictactoeWhiteReplayState.players.black !== "本地玩家 B" || tictactoeWhiteReplayState.players.white !== "本地玩家 A") process.exit(1);
@@ -100,6 +110,9 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   if (reversiState.moves[0].point !== "D3" || reversiState.pieceCounts.black !== 4 || reversiState.pieceCounts.white !== 1) process.exit(1);
   if (reversiPieceText.black !== "4" || reversiPieceText.white !== "1") process.exit(1);
   if (reversiPieceText.blackPlayer.includes("（4）") || reversiPieceText.whitePlayer.includes("（1）")) process.exit(1);
+  if (reversiPieceText.undoDisabled !== true) process.exit(1);
   if (!reversiState.timers || reversiState.timers.black < 1000 || reversiState.timers.white < 0) process.exit(1);
+  if (reversiUndoReadyState.undoMode !== "undo" || reversiUndoReadyState.moves.length !== 1 || !reversiUndoButtonReady) process.exit(1);
+  if (reversiUndoState.moves.length !== 0 || reversiUndoState.pieceCounts.black !== 2 || reversiUndoState.pieceCounts.white !== 2 || reversiUndoState.turn !== "黑棋") process.exit(1);
   if (connect4State.game !== "connect4" || connect4State.winner !== "红方" || connect4State.record.players["本地玩家 A"] !== 1) process.exit(1);
 })();

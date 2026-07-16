@@ -113,3 +113,10 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Changed Gomoku, Tic Tac Toe, Reversi, and Connect Four records to count wins by player name instead of side, and changed next-game seating so the winner becomes black/first side; verified with `BASE_URL=http://127.0.0.1:8102 npm test` and inspected `outputs/gomoku-modal.png` plus `outputs/grid-games-smoke.png`.
 - Added a dedicated Reversi current-board piece count card showing black and white disc totals separately from player names; verified with `BASE_URL=http://127.0.0.1:8103 npm test` and inspected `outputs/reversi-piece-count-card.png`.
 - Changed Tic Tac Toe to swap sides after every finished game regardless of winner, and added Reversi room/local mode selection for no-undo vs undo play with full last-move rollback; verified with `BASE_URL=http://127.0.0.1:8104 npm test` and inspected `outputs/reversi-undo-mode.png`.
+
+## 2026-07-16 Animal Chess Added
+
+- Added a new `animal-chess.html` room page and `animal-chess.js` logic for 斗兽棋 with 7x9 board rendering, river/den/trap terrain, piece ranks, lion/tiger river jumps, rat-vs-elephant special capture rules, and den victory.
+- Added an Animal Chess lobby card in `index.html` plus matching lobby art and board styles in `styles.css`.
+- Added smoke coverage in `tests/games-smoke.cjs` for starting the game and making a legal first move from the red rat.
+- TODO: if the user wants stricter official Dou Shou Qi edge cases later, the move validator can be tightened further around river combat and draw conditions.

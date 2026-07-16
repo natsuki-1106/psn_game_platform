@@ -270,6 +270,7 @@ label {
 .monopoly-art,
 .ludo-art,
 .checkers-art,
+.animal-art,
 .landlord-art,
 .reversi-art,
 .connect4-art {
@@ -429,6 +430,74 @@ label {
   right: 28%;
   bottom: 24%;
   background: radial-gradient(circle at 32% 28%, #ffffff, #d7dce4);
+}
+
+.animal-art {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.7) 0 12%, transparent 13%),
+    linear-gradient(180deg, rgba(35, 64, 96, 0.12), rgba(35, 64, 96, 0)),
+    linear-gradient(135deg, #f6edd8, #d7b27a);
+}
+
+.animal-art .river {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76%;
+  height: 24%;
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.42), transparent 28% 72%, rgba(255, 255, 255, 0.42)),
+    linear-gradient(180deg, #5eb5e6, #2d78b7);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.animal-art .den {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border: 5px solid rgba(23, 33, 43, 0.18);
+  border-radius: 18px;
+  transform: rotate(45deg);
+}
+
+.animal-art .den.red {
+  left: 22%;
+  bottom: 18%;
+  background: rgba(214, 62, 71, 0.72);
+}
+
+.animal-art .den.blue {
+  right: 22%;
+  top: 18%;
+  background: rgba(51, 111, 214, 0.72);
+}
+
+.animal-art .animal {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  box-shadow: 0 8px 16px rgba(23, 33, 43, 0.18);
+}
+
+.animal-art .animal.red {
+  left: 24%;
+  top: 24%;
+  background: radial-gradient(circle at 32% 28%, #ff9d95, #d63e47);
+}
+
+.animal-art .animal.blue {
+  right: 24%;
+  bottom: 24%;
+  background: radial-gradient(circle at 32% 28%, #8bc4ff, #336fd6);
 }
 
 .landlord-art .card {
@@ -1698,6 +1767,105 @@ canvas {
   box-shadow: 0 22px 42px rgba(23, 33, 43, 0.18);
 }
 
+.animal-board {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+  width: min(100%, 720px, calc(100svh - 180px));
+  aspect-ratio: 7 / 9;
+  padding: clamp(6px, 0.8vw, 10px);
+  border: clamp(5px, 0.8vw, 8px) solid #4e321c;
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(78, 50, 28, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(78, 50, 28, 0.12) 1px, transparent 1px),
+    linear-gradient(135deg, #f1d8a5, #c99557);
+  background-size: calc(100% / 7) calc(100% / 9);
+  box-shadow: 0 22px 42px rgba(23, 33, 43, 0.18);
+}
+
+.animal-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid rgba(60, 38, 18, 0.24);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f7e5bc, #e1bf7d);
+  color: var(--ink);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.animal-cell.river {
+  border-color: rgba(31, 102, 156, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 30%),
+    linear-gradient(180deg, #67b9ea, #2b7bbc);
+  color: #fff;
+}
+
+.animal-cell.den-red {
+  background: linear-gradient(180deg, #f7b3b8, #d63e47);
+  color: #fff;
+}
+
+.animal-cell.den-blue {
+  background: linear-gradient(180deg, #a9d2ff, #336fd6);
+  color: #fff;
+}
+
+.animal-cell.trap {
+  background: linear-gradient(180deg, #faedd3, #d9b876);
+}
+
+.animal-cell.selected {
+  outline: 4px solid rgba(12, 124, 89, 0.85);
+  outline-offset: -4px;
+}
+
+.animal-cell.target {
+  outline: 4px solid rgba(246, 211, 101, 0.95);
+  outline-offset: -4px;
+}
+
+.animal-cell.last-move {
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.36);
+}
+
+.animal-piece {
+  position: absolute;
+  inset: 12%;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+  color: #fff;
+  font-size: clamp(11px, 1.5vw, 18px);
+  font-weight: 900;
+  box-shadow: 0 8px 16px rgba(23, 33, 43, 0.18);
+}
+
+.animal-piece.red {
+  background: radial-gradient(circle at 32% 28%, #ff9d95, #d63e47);
+}
+
+.animal-piece.blue {
+  background: radial-gradient(circle at 32% 28%, #8bc4ff, #336fd6);
+}
+
+.animal-cell .cell-label {
+  position: absolute;
+  left: 4px;
+  top: 3px;
+  color: rgba(23, 33, 43, 0.56);
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .chinese-hole {
   position: absolute;
   display: grid;
@@ -2199,7 +2367,8 @@ canvas {
   .canvas-wrap,
   .ludo-map,
   .monopoly-map,
-  .checkers-board {
+  .checkers-board,
+  .animal-board {
     width: min(100%, calc(100svh - 220px));
   }
 }

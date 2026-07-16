@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>斗兽棋</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="config.js"></script>
+    <script defer src="vendor/supabase.js"></script>
+    <script defer src="room-common.js"></script>
+    <script defer src="animal-chess.js"></script>
+  </head>
+  <body>
+    <div class="single-shell">
+      <aside class="single-sidebar">
+        <div class="brand">
+          <div class="brand-mark">LP</div>
+          <div>
+            <h1>斗兽棋</h1>
+            <p>兽阶、河道、陷阱、兽穴都按常规规则处理。</p>
+          </div>
+        </div>
+        <a class="back-link" href="index.html">返回游戏大厅</a>
+
+        <section class="connection-panel" aria-label="房间面板">
+          <div class="panel-title">
+            <h2>房间</h2>
+            <span id="roomStatus">未进入</span>
+          </div>
+          <label>
+            昵称
+            <input id="nicknameInput" maxlength="16" autocomplete="off" />
+          </label>
+          <div class="button-grid">
+            <button id="hostBtn" class="primary-btn" type="button">创建房间</button>
+            <button id="joinBtn" type="button">加入房间</button>
+            <button id="leaveRoomBtn" type="button" hidden>退出房间</button>
+          </div>
+          <label>
+            房间号
+            <input id="roomInput" maxlength="16" autocomplete="off" placeholder="输入房间号" />
+          </label>
+          <div class="share-box">
+            <input id="shareInput" readonly placeholder="创建房间后生成邀请链接" />
+            <button id="copyBtn" type="button">复制</button>
+          </div>
+        </section>
+
+        <section class="control-card">
+          <h3>开局</h3>
+          <button id="startAnimalBtn" class="primary-btn" type="button">开始游戏</button>
+          <button id="resetAnimalBtn" type="button">重新开局</button>
+          <p class="mini-note">房主负责开局。红方先手，红方和蓝方分别控制自己的棋子。</p>
+        </section>
+
+        <section class="control-card">
+          <h3>状态</h3>
+          <strong id="animalTurn">等待开局</strong>
+          <p id="animalLog" class="mini-note">点击自己的棋子，再点高亮的目标格。</p>
+        </section>
+      </aside>
+
+      <main class="single-stage">
+        <header class="stage-header">
+          <div>
+            <p class="eyebrow">Animal Chess</p>
+            <h2>斗兽棋</h2>
+          </div>
+          <div class="score-strip">
+            <span id="animalRoomBadge">房间：未进入</span>
+            <span id="animalCountBadge">子力：红 8 / 蓝 8</span>
+            <span id="animalSideBadge">轮到红方</span>
+          </div>
+        </header>
+
+        <div id="animalBoard" class="animal-board" aria-label="斗兽棋棋盘"></div>
+      </main>
+    </div>
+  </body>
+</html>

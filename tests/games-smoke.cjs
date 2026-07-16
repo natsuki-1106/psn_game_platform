@@ -33,6 +33,14 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.click("#startCheckersBtn");
   const checkersState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 
+  await page.goto(`${baseUrl}/animal-chess.html`, { waitUntil: "networkidle" });
+  await page.click("#hostBtn");
+  await page.click("#startAnimalBtn");
+  await page.click(".animal-cell:nth-child(43)");
+  const animalSelectedState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  await page.click(".animal-cell:nth-child(36)");
+  const animalState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+
   await page.goto(`${baseUrl}/landlord.html`, { waitUntil: "networkidle" });
   await page.click("#hostBtn");
   await page.click("#addRobotBtn");
@@ -54,12 +62,15 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.screenshot({ path: "outputs/games-smoke.png", fullPage: true });
   await browser.close();
 
-  console.log(JSON.stringify({ monopolyState, ludoState, checkersState, landlordState, addRobotDisabled, errors }, null, 2));
+  console.log(JSON.stringify({ monopolyState, ludoState, checkersState, animalSelectedState, animalState, landlordState, addRobotDisabled, errors }, null, 2));
 
   if (errors.length) process.exit(1);
   if (monopolyState.players.length !== 4 || !monopolyState.started || !monopolyState.room?.roomId) process.exit(1);
   if (ludoState.teams.length !== 4 || !ludoState.started || !ludoState.room?.roomId) process.exit(1);
   if (checkersState.players.length !== 6 || !checkersState.started || !checkersState.room?.roomId) process.exit(1);
+  if (animalSelectedState.targets.length < 1) process.exit(1);
+  if (animalState.pieces.length !== 16 || !animalState.started || !animalState.room?.roomId) process.exit(1);
+  if (animalState.turn !== "blue" || animalState.lastMove?.to?.row !== 5 || animalState.lastMove?.to?.col !== 0) process.exit(1);
   if (landlordState.seats.length !== 3 || !landlordState.started || !landlordState.room?.roomId) process.exit(1);
   if (landlordState.phase !== "playing") process.exit(1);
   if (landlordState.bottomCards.length !== 3) process.exit(1);

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkPlay 德州扑克</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="config.js"></script>
+    <script defer src="vendor/supabase.js"></script>
+    <script defer src="room-common.js"></script>
+    <script defer src="texas.js"></script>
+  </head>
+  <body>
+    <div class="single-shell">
+      <aside class="single-sidebar">
+        <div class="brand">
+          <div class="brand-mark">LP</div>
+          <div>
+            <h1>德州扑克</h1>
+            <p>房间制 2-6 人桌，可补机器人。</p>
+          </div>
+        </div>
+        <a class="back-link" href="index.html">返回游戏大厅</a>
+
+        <section class="connection-panel" aria-label="房间面板">
+          <div class="panel-title">
+            <h2>房间</h2>
+            <span id="roomStatus">未进入</span>
+          </div>
+          <label>昵称<input id="nicknameInput" maxlength="16" autocomplete="off" /></label>
+          <div class="button-grid">
+            <button id="hostBtn" class="primary-btn" type="button">创建房间</button>
+            <button id="joinBtn" type="button">加入房间</button>
+            <button id="leaveRoomBtn" type="button" hidden>退出房间</button>
+          </div>
+          <label>房间号<input id="roomInput" maxlength="16" autocomplete="off" placeholder="输入房间号" /></label>
+          <div class="share-box">
+            <input id="shareInput" readonly placeholder="创建房间后生成邀请链接" />
+            <button id="copyBtn" type="button">复制</button>
+          </div>
+        </section>
+
+        <section class="control-card">
+          <h3>牌桌</h3>
+          <div class="inline-actions">
+            <button id="addTexasRobotBtn" type="button">加机器人</button>
+            <button id="resetTexasBtn" type="button">重置牌桌</button>
+          </div>
+          <button id="startTexasBtn" class="primary-btn" type="button">开始一局</button>
+          <p id="texasRoomLog" class="mini-note">满 2 个座位即可开始，最多 6 个座位。</p>
+        </section>
+
+        <section class="control-card">
+          <h3>操作</h3>
+          <strong id="texasTurn">等待开局</strong>
+          <div class="inline-actions">
+            <button id="checkCallBtn" class="primary-btn" type="button">跟注/过牌</button>
+            <button id="raiseBtn" type="button">加注 20</button>
+            <button id="foldBtn" type="button">弃牌</button>
+          </div>
+          <p id="texasLog" class="mini-note">翻牌前后按当前注额跟注、加注或弃牌，河牌后自动比牌。</p>
+        </section>
+      </aside>
+
+      <main class="single-stage">
+        <header class="stage-header">
+          <div>
+            <p class="eyebrow">Texas Hold'em</p>
+            <h2>德州扑克</h2>
+          </div>
+          <div class="score-strip">
+            <span id="texasRoomBadge">房间：未进入</span>
+            <span id="texasPotBadge">底池：0</span>
+            <span id="texasPhaseBadge">等待开局</span>
+          </div>
+        </header>
+
+        <section class="poker-table">
+          <div class="poker-board surface-card">
+            <h3>公共牌</h3>
+            <div id="communityCards" class="card-hand center-play"></div>
+          </div>
+          <div id="texasSeats" class="poker-seat-grid"></div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

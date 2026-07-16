@@ -271,6 +271,8 @@ label {
 .ludo-art,
 .checkers-art,
 .animal-art,
+.texas-art,
+.blackjack-art,
 .landlord-art,
 .reversi-art,
 .connect4-art {
@@ -529,6 +531,49 @@ label {
   right: 22%;
   top: 24%;
   transform: rotate(12deg);
+}
+
+.texas-art,
+.blackjack-art {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.08), transparent 36%),
+    linear-gradient(180deg, #1b6f48, #0f4d33);
+}
+
+.texas-art .card,
+.blackjack-art .card {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 102px;
+  border-radius: 8px;
+  background: #fff;
+  color: #17212b;
+  font-size: 28px;
+  font-weight: 900;
+  box-shadow: 0 12px 24px rgba(23, 33, 43, 0.18);
+}
+
+.texas-art .card:nth-child(1),
+.blackjack-art .card:nth-child(1) {
+  left: 24%;
+  top: 28%;
+  transform: rotate(-10deg);
+}
+
+.texas-art .card:nth-child(2),
+.blackjack-art .card:nth-child(2) {
+  left: 42%;
+  top: 22%;
+}
+
+.texas-art .card:nth-child(3),
+.blackjack-art .card:nth-child(3) {
+  right: 24%;
+  top: 28%;
+  color: #d63e47;
+  transform: rotate(10deg);
 }
 
 .lobby-game-body {
@@ -2168,6 +2213,58 @@ canvas {
   margin-right: -22px;
 }
 
+.poker-table {
+  display: grid;
+  gap: 18px;
+  min-height: min(720px, calc(100svh - 180px));
+  padding: clamp(14px, 2vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.1), transparent 38%),
+    linear-gradient(180deg, #1b6f48, #0f4d33);
+  box-shadow: 0 18px 40px rgba(23, 33, 43, 0.14);
+}
+
+.poker-board {
+  justify-items: center;
+  width: min(620px, 100%);
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.poker-seat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.poker-seat {
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.poker-seat.active {
+  border-color: rgba(246, 211, 101, 0.9);
+  box-shadow: 0 0 0 3px rgba(246, 211, 101, 0.28);
+}
+
+.poker-seat.winner {
+  border-color: rgba(12, 124, 89, 0.62);
+  background: #edf8f4;
+}
+
+.poker-seat header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.poker-seat .card-hand {
+  min-height: 86px;
+}
+
 @media (max-width: 1180px) {
   .lobby-grid-wide {
     grid-template-columns: repeat(2, minmax(260px, 1fr));
@@ -2294,6 +2391,15 @@ canvas {
   .landlord-table {
     min-height: auto;
     padding: 14px;
+  }
+
+  .poker-table {
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .poker-seat-grid {
+    grid-template-columns: 1fr;
   }
 
   .landlord-table,

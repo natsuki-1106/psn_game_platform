@@ -7,6 +7,7 @@ const canvas = document.querySelector("#boardCanvas");
 const ctx = canvas.getContext("2d");
 const roomInput = document.querySelector("#roomInput");
 const localBtn = document.querySelector("#localBtn");
+const surrenderBtn = document.querySelector("#surrenderBtn");
 const restartBtn = document.querySelector("#restartBtn");
 const undoBtn = document.querySelector("#undoBtn");
 const approveUndoBtn = document.querySelector("#approveUndoBtn");
@@ -336,6 +337,9 @@ function updateUndoPanel() {
   } else {
     undoBtn.textContent = "悔棋";
   }
+  if (surrenderBtn) {
+    surrenderBtn.disabled = state.mode === "idle" || state.winner || Boolean(state.undoRequest);
+  }
 }
 
 function updatePlayers() {
@@ -495,6 +499,17 @@ function canPlay() {
   return (state.role === "black" && state.turn === BLACK) || (state.role === "white" && state.turn === WHITE);
 }
 
+function surrenderGame() {
+  if (state.winner || state.mode === "idle") return;
+  const loser = state.mode === "local" ? state.turn : ownColor();
+  if (!loser) return;
+  const winner = oppositeColor(loser);
+  finishGame(winner);
+  state.message = `${colorName(loser)}认输，${colorName(winner)}获胜`;
+  render();
+  broadcastSnapshot();
+}
+
 function countDirection(row, col, dr, dc, color) {
   let count = 0;
   let r = row + dr;
@@ -651,6 +666,7 @@ canvas.addEventListener("click", (event) => {
 });
 
 localBtn.addEventListener("click", startLocal);
+surrenderBtn?.addEventListener("click", surrenderGame);
 restartBtn.addEventListener("click", () => {
   resetRoomRecord(state.mode === "local" ? "本地房间" : "当前房间");
   resetBoard(true, "已重新开局，战绩已清零");

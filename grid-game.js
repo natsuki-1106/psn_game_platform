@@ -53,6 +53,7 @@
   const canvas = document.querySelector("#boardCanvas");
   const ctx = canvas.getContext("2d");
   const localBtn = document.querySelector("#localBtn");
+  const surrenderBtn = document.querySelector("#surrenderBtn");
   const startBtn = document.querySelector("#startBtn");
   const restartBtn = document.querySelector("#restartBtn");
   const undoBtn = document.querySelector("#undoBtn");
@@ -505,6 +506,16 @@
     showResultModal();
   }
 
+  function surrenderGame() {
+    if (!state.started || state.winner || state.draw || state.mode === "idle") return;
+    const loser = state.mode === "local" ? state.turn : ownColor();
+    if (!loser) return;
+    const winner = oppositeColor(loser);
+    finishGame(winner, `${colorName(loser)}投降`);
+    render();
+    broadcastSnapshot();
+  }
+
   function afterMove(row, col, color) {
     if (config.key === "tictactoe") {
       if (checkLineWin(row, col, color, 3)) finishGame(color, `${colorName(color)}获胜`);
@@ -819,6 +830,9 @@
       undoBtn.hidden = config.key !== "reversi";
       undoBtn.disabled = !canUndoLastMove();
     }
+    if (surrenderBtn) {
+      surrenderBtn.disabled = state.mode === "idle" || !state.started || Boolean(state.winner) || Boolean(state.draw);
+    }
     recordSession.textContent = state.recordLabel;
     totalGames.textContent = state.record.total;
     if (blackWins.previousElementSibling) blackWins.previousElementSibling.textContent = `${state.players.black}胜`;
@@ -872,6 +886,7 @@
   });
 
   localBtn.addEventListener("click", startLocal);
+  surrenderBtn?.addEventListener("click", surrenderGame);
   undoModeSelect?.addEventListener("change", () => {
     state.undoMode = selectedUndoMode();
     if (config.key === "reversi" && state.mode !== "idle" && !state.started) broadcastSnapshot();

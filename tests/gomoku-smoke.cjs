@@ -102,10 +102,16 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   await page.waitForURL(/index\.html$/);
   const lobbyTitle = await page.locator("h1").innerText();
 
+  await page.goto(`${baseUrl}/gomoku.html`, { waitUntil: "networkidle" });
+  await page.click("#localBtn");
+  await page.click("#surrenderBtn");
+  await page.locator("#resultModal").waitFor({ state: "visible" });
+  const surrenderState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+
   await page.screenshot({ path: "outputs/gomoku-smoke.png", fullPage: true });
   await browser.close();
 
-  console.log(JSON.stringify({ initialState, restoredState, controlsAfterJoin, undoRollbackState, status, modalText, wonState, replayState, secondWonState, lobbyTitle, errors }, null, 2));
+  console.log(JSON.stringify({ initialState, restoredState, controlsAfterJoin, undoRollbackState, status, modalText, wonState, replayState, secondWonState, lobbyTitle, surrenderState, errors }, null, 2));
 
   if (errors.length) process.exit(1);
   if (!initialState.supabaseConfigured) {
@@ -126,4 +132,7 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:8080";
   if (wonState.moves[0].point !== "H8") process.exit(1);
   if (secondWonState.record.total !== 2 || secondWonState.record.players["本地玩家 A"] !== 2) process.exit(1);
   if (lobbyTitle !== "LinkPlay") process.exit(1);
+  if (!surrenderState.modalOpen) process.exit(1);
+  if (surrenderState.record.total !== 1) process.exit(1);
+  if (!Object.values(surrenderState.record.players).includes(1)) process.exit(1);
 })();

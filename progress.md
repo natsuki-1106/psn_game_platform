@@ -120,3 +120,10 @@ Original prompt: 写一个能在github上搭建的多人链接小游戏平台，
 - Added an Animal Chess lobby card in `index.html` plus matching lobby art and board styles in `styles.css`.
 - Added smoke coverage in `tests/games-smoke.cjs` for starting the game and making a legal first move from the red rat.
 - TODO: if the user wants stricter official Dou Shou Qi edge cases later, the move validator can be tightened further around river combat and draw conditions.
+
+## 2026-07-20 Gomoku And Tic Tac Toe Surrender
+
+- Added active surrender buttons to Gomoku and Tic Tac Toe.
+- Surrender immediately ends the current game, credits the opponent by player name, opens the existing result panel, and follows the existing next-game side rule.
+- Added smoke coverage for Gomoku and Tic Tac Toe surrender result/record behavior.
+- Verified with syntax checks, focused smoke tests, full `npm test`, and screenshots at `outputs/gomoku-surrender.png` and `outputs/tictactoe-surrender.png`.
